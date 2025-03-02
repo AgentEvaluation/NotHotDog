@@ -40,16 +40,8 @@ export default function WarningDialog({ isOpen, onClose }: WarningDialogProps) {
             <TriangleAlert className="mr-2 h-5 w-5 text-yellow-500" />
             LLM Keys not configured
           </DialogTitle>
-          <DialogClose asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 w-8 h-8 rounded-full hover:bg-zinc-700/50"
-              onClick={handleClose}
-            >
-              <span className="text-zinc-400">X</span>
-            </Button>
-          </DialogClose>
+          <DialogClose className="absolute right-4 top-4" />
+          
         </DialogHeader>
         <div className="mb-4 text-sm text-zinc-400">
           Please navigate to Settings (

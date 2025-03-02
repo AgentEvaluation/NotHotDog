@@ -3,43 +3,12 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Sparkles, Plus, FileText, Search, MoreHorizontal, Trash2, Edit, ArrowUpDown } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogFooter } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
+import { Sparkles, Plus, FileText, Search, Trash2 } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-
-// Define metric types
-type MetricType =
-  | "Binary Qualitative"
-  | "Numeric"
-  | "Binary Workflow Adherence (always)"
-  | "Continuous Qualitative"
-  | "Enum"
-
-type Criticality = "Low" | "Medium" | "High"
-
-interface Metric {
-  id: string
-  name: string
-  description?: string
-  type: MetricType
-  successCriteria?: string
-  criticality?: Criticality
-  createdAt?: string
-}
+import { Input } from "@/components/ui/input"
+import { Metric, MetricType, Criticality } from "./types"
+import MetricsTable from "./MetricsTable"
+import MetricFormDialog from "./MetricFormDialog"
 
 export default function MetricsPage() {
   // Sample data
@@ -61,33 +30,6 @@ export default function MetricsPage() {
       successCriteria: "Less than 4 hours",
       criticality: "Medium",
       createdAt: "2023-11-09",
-    },
-    {
-      id: "3",
-      name: "Customer Satisfaction",
-      description: "Overall satisfaction rating provided by customer",
-      type: "Continuous Qualitative",
-      successCriteria: "Rating of 4 or higher on 5-point scale",
-      criticality: "High",
-      createdAt: "2023-11-08",
-    },
-    {
-      id: "4",
-      name: "Greeting Protocol Followed",
-      description: "Agent followed the standard greeting protocol",
-      type: "Binary Workflow Adherence (always)",
-      successCriteria: "All required greeting elements present",
-      criticality: "Low",
-      createdAt: "2023-11-07",
-    },
-    {
-      id: "5",
-      name: "Issue Categorization",
-      description: "Proper categorization of customer issue type",
-      type: "Enum",
-      successCriteria: "Correct category selected from available options",
-      criticality: "Medium",
-      createdAt: "2023-11-06",
     },
   ])
 
@@ -111,8 +53,7 @@ export default function MetricsPage() {
   const filteredMetrics = metrics.filter((metric) => {
     const matchesSearch =
       metric.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      metric.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      false
+      metric.description?.toLowerCase().includes(searchQuery.toLowerCase())
 
     if (activeTab === "all") return matchesSearch
     return matchesSearch && metric.criticality?.toLowerCase() === activeTab.toLowerCase()
@@ -136,10 +77,15 @@ export default function MetricsPage() {
     }
   }
 
-  // Handle delete metrics
+  // Handle deleting multiple metrics
   const handleDeleteMetrics = () => {
     setMetrics(metrics.filter((metric) => !selectedRows.includes(metric.id)))
     setSelectedRows([])
+  }
+
+  // Handle deleting a single metric
+  const handleDeleteSingleMetric = (id: string) => {
+    setMetrics(metrics.filter((m) => m.id !== id))
   }
 
   // Handle edit metric
@@ -158,49 +104,41 @@ export default function MetricsPage() {
     }
   }
 
-  // Handle save metric
+  // Handle save (create/update) metric
   const handleSaveMetric = () => {
     if (editingMetric) {
       // Update existing metric
-      setMetrics(metrics.map((metric) => (metric.id === editingMetric ? { ...metric, ...formData } : metric)))
+      setMetrics((prev) =>
+        prev.map((metric) =>
+          metric.id === editingMetric
+            ? {
+                ...metric,
+                ...formData,
+              }
+            : metric
+        )
+      )
     } else {
-      // Create new metric with proper typing
+      // Create new metric
       const newMetric: Metric = {
         id: (metrics.length + 1).toString(),
-        name: formData.name,
-        description: formData.description,
-        type: formData.type as MetricType, // Ensure type is cast as MetricType
-        successCriteria: formData.successCriteria,
-        criticality: formData.criticality as Criticality, // Also ensure criticality is properly typed
+        ...formData,
         createdAt: new Date().toISOString().split("T")[0],
       }
       setMetrics([...metrics, newMetric])
     }
 
-    // Reset form and close modal
+    // Reset form
     setFormData(initialFormState)
     setEditingMetric(null)
     setIsModalOpen(false)
-  }
-
-  // Get criticality badge color
-  const getCriticalityColor = (criticality?: Criticality) => {
-    switch (criticality) {
-      case "High":
-        return "destructive"
-      case "Medium":
-        return "warning"
-      case "Low":
-        return "secondary"
-      default:
-        return "secondary"
-    }
   }
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
       <main className="flex-1 overflow-y-auto p-6">
         <div className="max-w-7xl mx-auto space-y-6">
+          {/* Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Metrics</h1>
@@ -229,10 +167,12 @@ export default function MetricsPage() {
             </div>
           </div>
 
+          {/* Table + Search + Tabs */}
           <div className="grid gap-4">
             <Card>
               <CardHeader className="p-4 pb-0">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  {/* Search */}
                   <div className="relative w-full sm:w-80">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -242,6 +182,8 @@ export default function MetricsPage() {
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
                   </div>
+
+                  {/* Tabs + Bulk Delete */}
                   <div className="flex items-center gap-2 w-full sm:w-auto">
                     <Tabs
                       defaultValue="all"
@@ -266,215 +208,37 @@ export default function MetricsPage() {
                   </div>
                 </div>
               </CardHeader>
+
               <CardContent className="p-0">
-                <div className="border rounded-md mt-4">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-12">
-                          <div className="flex items-center justify-center">
-                            <input
-                              type="checkbox"
-                              className="h-4 w-4 rounded border-gray-300"
-                              checked={selectedRows.length === filteredMetrics.length && filteredMetrics.length > 0}
-                              onChange={toggleSelectAll}
-                            />
-                          </div>
-                        </TableHead>
-                        <TableHead>
-                          <div className="flex items-center">
-                            Name
-                            <ArrowUpDown size={14} className="ml-1 text-muted-foreground" />
-                          </div>
-                        </TableHead>
-                        <TableHead className="hidden md:table-cell">Type</TableHead>
-                        <TableHead className="hidden lg:table-cell">Success Criteria</TableHead>
-                        <TableHead>Criticality</TableHead>
-                        <TableHead className="hidden sm:table-cell">Created</TableHead>
-                        <TableHead className="w-12"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredMetrics.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                            No metrics found. Create your first metric to get started.
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredMetrics.map((metric) => (
-                          <TableRow key={metric.id} className="group">
-                            <TableCell>
-                              <div className="flex items-center justify-center">
-                                <input
-                                  type="checkbox"
-                                  className="h-4 w-4 rounded border-gray-300"
-                                  checked={selectedRows.includes(metric.id)}
-                                  onChange={() => toggleRowSelection(metric.id)}
-                                />
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="font-medium">{metric.name}</div>
-                              <div className="text-sm text-muted-foreground md:hidden">{metric.type}</div>
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">
-                              <Badge variant="outline">{metric.type}</Badge>
-                            </TableCell>
-                            <TableCell className="hidden lg:table-cell max-w-xs truncate">
-                              {metric.successCriteria}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={getCriticalityColor(metric.criticality)}>{metric.criticality}</Badge>
-                            </TableCell>
-                            <TableCell className="hidden sm:table-cell text-muted-foreground">
-                              {metric.createdAt}
-                            </TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100">
-                                    <MoreHorizontal size={16} />
-                                    <span className="sr-only">Actions</span>
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onSelect={() => setTimeout(() => handleEditMetric(metric.id), 0)}>
-                                    <Edit size={14} className="mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    className="text-destructive focus:text-destructive"
-                                    onClick={() => {
-                                      setMetrics(metrics.filter((m) => m.id !== metric.id))
-                                    }}
-                                  >
-                                    <Trash2 size={14} className="mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+                {/* Metrics Table */}
+                <MetricsTable
+                  metrics={filteredMetrics}
+                  selectedRows={selectedRows}
+                  toggleRowSelection={toggleRowSelection}
+                  toggleSelectAll={toggleSelectAll}
+                  handleEditMetric={handleEditMetric}
+                  handleDeleteSingleMetric={handleDeleteSingleMetric}
+                />
               </CardContent>
             </Card>
           </div>
         </div>
       </main>
 
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>{editingMetric ? "Edit Metric" : "Create New Metric"}</DialogTitle>
-            <DialogClose className="absolute right-4 top-4" />
-          </DialogHeader>
-
-          <div className="grid gap-6 py-4">
-            <div className="grid gap-3">
-              <Label htmlFor="name">Metric Name</Label>
-              <Input
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Enter metric name"
-              />
-            </div>
-
-            <div className="grid gap-3">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Enter metric description"
-                rows={3}
-              />
-            </div>
-
-            <div className="grid gap-3">
-              <Label htmlFor="type">Metric Type</Label>
-              <Select
-                value={formData.type}
-                onValueChange={(value) => setFormData({ ...formData, type: value as MetricType })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select metric type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Binary Qualitative">Binary Qualitative</SelectItem>
-                  <SelectItem value="Numeric">Numeric</SelectItem>
-                  <SelectItem value="Binary Workflow Adherence (always)">Binary Workflow Adherence</SelectItem>
-                  <SelectItem value="Continuous Qualitative">Continuous Qualitative</SelectItem>
-                  <SelectItem value="Enum">Enum</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid gap-3">
-              <Label htmlFor="successCriteria">Success Criteria</Label>
-              <Textarea
-                id="successCriteria"
-                name="successCriteria"
-                value={formData.successCriteria}
-                onChange={(e) => setFormData({ ...formData, successCriteria: e.target.value })}
-                placeholder="Define what constitutes success for this metric"
-                rows={2}
-              />
-            </div>
-
-            <div className="grid gap-3">
-              <Label>Criticality</Label>
-              <RadioGroup
-                value={formData.criticality}
-                onValueChange={(value) => setFormData({ ...formData, criticality: value as Criticality })}
-                className="flex space-x-4"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Low" id="criticality-low" />
-                  <Label htmlFor="criticality-low" className="cursor-pointer">
-                    Low
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Medium" id="criticality-medium" />
-                  <Label htmlFor="criticality-medium" className="cursor-pointer">
-                    Medium
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="High" id="criticality-high" />
-                  <Label htmlFor="criticality-high" className="cursor-pointer">
-                    High
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setFormData(initialFormState)
-                setEditingMetric(null)
-                setIsModalOpen(false)
-              }}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleSaveMetric}>{editingMetric ? "Save Changes" : "Create Metric"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Dialog for Creating/Editing a Metric */}
+      <MetricFormDialog
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        formData={formData}
+        setFormData={setFormData}
+        onSave={handleSaveMetric}
+        onCancel={() => {
+          setFormData(initialFormState)
+          setEditingMetric(null)
+          setIsModalOpen(false)
+        }}
+        editingMetric={editingMetric}
+      />
     </div>
   )
 }
-

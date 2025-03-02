@@ -20,6 +20,7 @@ export interface Rule {
     endpointUrl: string;
     apiConfig: ApiConfig;
     persona?: string;
+    userApiKey: string
   }
   
 

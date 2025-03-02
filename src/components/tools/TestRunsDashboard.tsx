@@ -51,59 +51,12 @@ export function TestRunsDashboard() {
     selectedChat,
     setSelectedChat,
     savedAgentConfigs,
-    executeTest
+    executeTest,
+    error
   } = useTestExecution();
 
   const [showWarningDialog, setShowWarningDialog] = useState(false); // State to control the WarningDialog dialog
   const [testIdToExecute, setTestIdToExecute] = useState<string | null>(null); // State to store the test ID to execute after API key check
-
-  // Wrap the original executeTest function
-  // const executeTest = useCallback(
-  //   async (testId: string) => {
-  //     const apiKey = localStorage.getItem("anthropic_api_key");
-  //     if (!apiKey) {
-  //       // alert("API key is missing");
-  //       setShowWarningDialog(true); // Show the warning dialog if API key is missing
-  //       setTestIdToExecute(testId); // Store the test ID to execute later
-  //       return; // **Crucially, RETURN here to prevent further execution!**
-  //     }
-
-  //     try {
-  //       await baseExecuteTest(testId); // Call the original executeTest function
-  //     } catch (error: any) {
-  //       // More robust error checking
-  //       if (error && typeof error === "object") {
-  //         const errorMessage = (
-  //           error.message || error.toString()
-  //         ).toLowerCase();
-
-  //         if (
-  //           errorMessage.includes("401") &&
-  //           errorMessage.includes("invalid x-api-key")
-  //         ) {
-  //           setShowWarningDialog(true);
-  //           setTestIdToExecute(testId);
-  //         } else {
-  //           console.error("Error in test execution:", error);
-  //         }
-  //       } else {
-  //         // Handle cases where the error is not an object with a message property
-  //         console.error("Unexpected error format:", error);
-  //       }
-  //     }
-  //   },
-  //   [baseExecuteTest]
-  // );
-
-  // Function to be called after the WarningDialog dialog is closed
-  const onWarningDialogClose = useCallback(() => {
-    setShowWarningDialog(false);
-    // If a test ID was stored, execute the test
-    if (testIdToExecute) {
-      executeTest(testIdToExecute); // Use the wrapped executeTest
-      setTestIdToExecute(null); // Clear the stored test ID
-    }
-  }, [executeTest, testIdToExecute]);
 
   if (selectedChat) {
     return (
@@ -182,6 +135,11 @@ export function TestRunsDashboard() {
   if (selectedRun) {
     return (
       <div className="p-6 space-y-6">
+        {error && (
+          <div className="p-4 mb-4 text-red-600 bg-red-100 rounded">
+            {error.message}
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Button variant="ghost" onClick={() => setSelectedRun(null)}>

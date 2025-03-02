@@ -12,6 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ModelFactory } from "@/services/llm/modelfactory";
 import { AnthropicModel } from "@/services/llm/enums";
 import { SYSTEM_PROMPTS } from "@/services/prompts";
+import { dbService } from "@/services/db";
 
 export class QaAgent {
   private model;
@@ -20,42 +21,54 @@ export class QaAgent {
   private prompt: ChatPromptTemplate;
 
   constructor(config: QaAgentConfig) {
-
     this.config = config;
-
-    const apiKey = localStorage.getItem('anthropic_api_key');
+  
+    const apiKey = config.userApiKey || "";
     if (!apiKey) {
-      throw new Error('Anthropic API key not found. Please add your API key in settings.');
+      throw new Error("Anthropic API key not provided to QaAgent.");
     }
 
     this.model = ModelFactory.createLangchainModel(
       config.modelId || AnthropicModel.Sonnet3_5,
       apiKey
-    )
-
+    );
+    
     this.memory = new BufferMemory({
       returnMessages: true,
       memoryKey: "chat_history",
       inputKey: "input",
     });
 
-    const personas = {
-    } as const;
-
-    type PersonaKey = keyof typeof personas; 
-
-    const personaKey = config.persona as PersonaKey | undefined;
-    const personaSystemPrompt = personaKey ? personas[personaKey]?.systemPrompt : undefined;
-  
-
     this.prompt = ChatPromptTemplate.fromMessages([
-      ["system", SYSTEM_PROMPTS.API_TESTER(personaSystemPrompt)],
+      ["system", SYSTEM_PROMPTS.API_TESTER()],
       ["human", "{input}"]
     ]);
   }
 
   async runTest(scenario: string, expectedOutput: string): Promise<TestResult> {
     try {
+
+
+      let personaSystemPrompt;
+      
+      if (this.config.persona) {
+        try {
+          const persona = await dbService.getPersonaById(this.config.persona);
+          if (persona && persona.system_prompt) {
+            personaSystemPrompt = persona.system_prompt;
+          }
+        } catch (error) {
+          console.error('Error fetching persona:', error);
+          // If there's an error, we'll use the default personality
+        }
+      }
+      
+      // Create the prompt with the persona's system prompt or default
+      this.prompt = ChatPromptTemplate.fromMessages([
+        ["system", SYSTEM_PROMPTS.API_TESTER(personaSystemPrompt)],
+        ["human", "{input}"]
+      ]);
+
       const chain = RunnableSequence.from([
         this.prompt,
         this.model,
@@ -243,55 +256,3 @@ export class QaAgent {
     }
   }
 }
-
-//       // Final analysis
-//       const analysisResult = await chain.invoke({
-//         input: `Analyze if this conversation met our test expectations:
-
-// Original scenario: ${scenario}
-// Expected behavior: ${expectedOutput}
-
-// Conversation:
-// ${allMessages.map(m => `${m.role === 'user' ? 'Human' : 'Assistant'}: ${m.content}`).join('\n\n')}
-
-// Consider that the response format was ${formatValid ? 'valid' : 'invalid'}
-// and the condition was ${conditionMet ? 'met' : 'not met'}.
-
-// Did the interaction meet our expectations? Explain why or why not.`
-//       });
-
-//       await this.memory.saveContext(
-//         { input: testMessage },
-//         { output: chatResponse }
-//       );
-
-//       return {
-//         conversation: {
-//           humanMessage: testMessage,
-//           rawInput: formattedInput,
-//           rawOutput: apiResponse,
-//           chatResponse,
-//           allMessages
-//         },
-//         validation: {
-//           passedTest: formatValid && conditionMet,
-//           formatValid,
-//           conditionMet,
-//           explanation: analysisResult,
-//           metrics: {
-//             responseTime: totalResponseTime
-//           }
-//         }
-//       };
-
-//     } catch (error) {
-//       console.error('Error in runTest:', error);
-//       throw error;
-//     }
-//   }
-
-
-//   async reset(): Promise<void> {
-//     await this.memory.clear();
-//   }
-// }

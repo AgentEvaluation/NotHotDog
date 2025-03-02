@@ -1,5 +1,4 @@
 "use client"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
@@ -136,8 +135,7 @@ export default function MetricsPage() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
-      <main className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
+      <main className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
@@ -145,9 +143,9 @@ export default function MetricsPage() {
               <p className="text-muted-foreground mt-1">Manage and track your quality assurance metrics</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" className="gap-2 h-9">
+              <Button variant="outline" className="gap-2 h-9" disabled={true}>
                 <Sparkles size={16} className="text-primary" />
-                <span>Generate</span>
+                <span>Generate - Coming Soon </span>
               </Button>
               <Button
                 className="gap-2 h-9"
@@ -159,10 +157,6 @@ export default function MetricsPage() {
               >
                 <Plus size={16} />
                 <span>Create Metric</span>
-              </Button>
-              <Button variant="outline" className="gap-2 h-9">
-                <FileText size={16} />
-                <span>Templates</span>
               </Button>
             </div>
           </div>
@@ -222,7 +216,6 @@ export default function MetricsPage() {
               </CardContent>
             </Card>
           </div>
-        </div>
       </main>
 
       {/* Dialog for Creating/Editing a Metric */}

@@ -48,14 +48,10 @@ export default function ApiKeyConfig() {
         </Button>
       </DialogTrigger>
       <div className={`modal-overlay ${isOpen ? "block" : "hidden"}`} />
-      <DialogContent className="sm:max-w-[425px] bg-background/90 border-border">
+      <DialogContent className="sm:max-w-[425px] border-border">
         <DialogHeader className="flex flex-row justify-between items-center">
           <DialogTitle>Add Anthropic Config</DialogTitle>
-          <DialogClose asChild>
-            <Button variant="ghost" size="icon">
-              <span>X</span>
-            </Button>
-          </DialogClose>
+          <DialogClose className="absolute right-4 top-4" />
         </DialogHeader>
         <div className="space-y-6 py-4">
           <div className="space-y-2">

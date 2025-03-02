@@ -271,22 +271,22 @@ export class DbService {
     }
   }
   
-  async updateTestRun(run: TestRun) {
-    try {
-      return await prisma.test_runs.update({
-        where: { id: run.id },
-        data: {
-          status: run.status,
-          total_tests: run.metrics.total,
-          passed_tests: run.metrics.passed,
-          failed_tests: run.metrics.failed,
-        }
-      });
-    } catch (error) {
-      console.error("Database error in updateTestRun:", error);
-      throw new Error("Failed to update test run");
-    }
-  }
+  // async updateTestRun(run: TestRun) {
+  //   try {
+  //     return await prisma.test_runs.update({
+  //       where: { id: run.id },
+  //       data: {
+  //         status: run.status,
+  //         total_tests: run.metrics.total,
+  //         passed_tests: run.metrics.passed,
+  //         failed_tests: run.metrics.failed,
+  //       }
+  //     });
+  //   } catch (error) {
+  //     console.error("Database error in updateTestRun:", error);
+  //     throw new Error("Failed to update test run");
+  //   }
+  // }
   
   async getTestVariations(testId: string): Promise<SimplifiedTestCases> {
     try {
@@ -434,6 +434,18 @@ export class DbService {
       return [];
     }
   }
+
+  async getPersonaById(personaId: string) {
+    try {
+      const persona = await prisma.personas.findUnique({
+        where: { id: personaId }
+      });
+      return persona;
+    } catch (error) {
+      console.error("Database error in getPersonaById:", error);
+      throw new Error("Failed to fetch persona");
+    }
+  }
   
   async updateValidationRules(agentId: string, rules: Rule[]) {
     try {
@@ -496,9 +508,19 @@ export class DbService {
     }
   }
   
-  async getTestRuns(): Promise<TestRun[]> {
+  async getTestRuns(userId: string): Promise<TestRun[]> {
     try {
+      // Retrieve the user's profile to get the org_id
+      const profile = await prisma.profiles.findUnique({
+        where: { clerk_id: userId }
+      });
+      if (!profile || !profile.org_id) {
+        console.error(`Profile not found or missing org_id for user ${userId}`);
+        throw new Error("Unauthorized: Profile not found or org missing");
+      }
+      
       const runs = await prisma.test_runs.findMany({
+        where: { agent_configs: { org_id: profile.org_id } },
         include: {
           test_conversations: {
             include: {
@@ -508,7 +530,7 @@ export class DbService {
         },
         orderBy: { created_at: 'desc' },
       });
-    
+      
       return runs.map(run => ({
         id: run.id,
         name: run.name,
@@ -560,6 +582,7 @@ export class DbService {
       throw new Error("Failed to fetch test runs");
     }
   }
+  
   
   async signupUser(data: { 
     clerkId: string; 

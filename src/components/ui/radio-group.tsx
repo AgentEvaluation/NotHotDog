@@ -43,7 +43,7 @@ const RadioGroupItem = React.forwardRef<HTMLButtonElement, RadioGroupItemProps>(
         ref={ref}
         type="button"
         variant={isActive ? "default" : "outline"}
-        className={cn("px-3 py-1 h-auto", className)}
+        className={cn("px-[var(--input-padding-x)] py-[var(--input-padding-y)] h-auto", className)}
         onClick={() => context.onValueChange(value)}
         {...props}
       >

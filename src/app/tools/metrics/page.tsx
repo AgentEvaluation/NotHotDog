@@ -339,7 +339,7 @@ export default function MetricsPage() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleEditMetric(metric.id)}>
+                                  <DropdownMenuItem onSelect={() => setTimeout(() => handleEditMetric(metric.id), 0)}>
                                     <Edit size={14} className="mr-2" />
                                     Edit
                                   </DropdownMenuItem>

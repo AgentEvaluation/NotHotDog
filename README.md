@@ -34,16 +34,22 @@ cd NotHotDog
 npm install
 ```
 
-3. Set up environment variables
-- Create a `.env` file
-- Add the database URL:
-```
-ANTHROPIC_API_KEY=your_anthropic_api_key
-OPENAI_API_KEY=your_openai_api_key
-DATABASE_URL=postgres_supabase_url
+3. Initialize Prisma
+```bash
+npx prisma generate
 ```
 
-4. Run the development server
+4. Set up environment variables
+- Create a `.env.local` file
+- Add the database URL:
+```
+ANTHROPIC_API_KEY=anthropic_api_key
+DATABASE_URL=postgres_supabase_url
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=public_clerk_key
+CLERK_SECRET_KEY=clerk_key
+```
+
+5. Run the development server
 ```bash
 npm run dev
 ```
@@ -89,7 +95,7 @@ npm run dev
 
 - 🧪 Automated Test Case Generation with 50+ Parallel Runs
 - 📊 Comprehensive Metrics Dashboard
-- 🤖 Personality Based Testing
+- 🤖 Personality-Based Testing
 - 🔍 Detailed Response Validation
 - 📈 Performance Analytics
 - 🌐 Scenario-based Testing

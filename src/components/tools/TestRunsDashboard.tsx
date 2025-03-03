@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TestMessage } from "@/types/runs";
@@ -43,6 +43,110 @@ function CollapsibleJson({ content }: { content: string }) {
   }
 }
 
+// A component to display real-time messages during test execution
+function LiveTestExecution({ 
+  currentMessages, 
+  isTyping, 
+  onCancel 
+}: { 
+  currentMessages: TestMessage[],
+  isTyping: boolean,
+  onCancel: () => void
+}) {
+  // Group messages by chatId
+  const messagesByChat = currentMessages.reduce((acc, msg) => {
+    if (!msg.chatId) return acc;
+    if (!acc[msg.chatId]) {
+      acc[msg.chatId] = [];
+    }
+    acc[msg.chatId].push(msg);
+    return acc;
+  }, {} as Record<string, TestMessage[]>);
+
+  // Get list of chatIds
+  const chatIds = Object.keys(messagesByChat);
+  
+  // If no chats yet, show loading
+  if (chatIds.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[300px]">
+        <div className="w-12 h-12 border-4 border-t-4 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-lg font-medium">Starting test execution...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold">Live Test Execution</h2>
+        <Button variant="outline" onClick={onCancel}>Cancel Test</Button>
+      </div>
+
+      {chatIds.map(chatId => {
+        const messages = messagesByChat[chatId];
+        const lastMessage = messages[messages.length - 1];
+        
+        return (
+          <div key={chatId} className="border border-border rounded-lg p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-medium">{`Conversation #${chatId.substring(0, 6)}`}</h3>
+              <Badge className="bg-yellow-500/20 text-yellow-400">Live</Badge>
+            </div>
+            
+            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+              {messages.map((message, index) => (
+                <div key={message.id || `msg-${index}`} className="space-y-2">
+                  {message.role === "user" ? (
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center flex-shrink-0">
+                        <span className="text-sm">👤</span>
+                      </div>
+                      <div className="flex-1 overflow-hidden">
+                        <div className="bg-blue-500/20 rounded-md">
+                          <div className="p-3 text-sm">{message.content}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1 overflow-hidden">
+                        <div className="bg-emerald-500/10 rounded-md">
+                          <div className="p-3 text-sm">{message.content}</div>
+                        </div>
+                      </div>
+                      <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                        <span className="text-sm">🤖</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+              
+              {isTyping && lastMessage?.role === 'user' && (
+                <div className="flex items-start gap-3">
+                  <div className="flex-1 overflow-hidden">
+                    <div className="bg-emerald-500/10 rounded-md p-3">
+                      <div className="flex space-x-2">
+                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse delay-150"></div>
+                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse delay-300"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-sm">🤖</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function TestRunsDashboard() {
   const {
     runs,
@@ -52,11 +156,29 @@ export function TestRunsDashboard() {
     setSelectedChat,
     savedAgentConfigs,
     executeTest,
-    error
+    resetState,
+    error,
+    status,
+    currentMessages,
+    isTyping
   } = useTestExecution();
 
-  const [showWarningDialog, setShowWarningDialog] = useState(false); // State to control the WarningDialog dialog
-  const [testIdToExecute, setTestIdToExecute] = useState<string | null>(null); // State to store the test ID to execute after API key check
+  const [showWarningDialog, setShowWarningDialog] = useState(false);
+
+  // If test is running, show live execution view instead of normal UI
+  if (status === 'running' || status === 'connecting') {
+    return (
+      <div className="p-6 max-w-[1200px] mx-auto">
+        <LiveTestExecution 
+          currentMessages={currentMessages} 
+          isTyping={isTyping} 
+          onCancel={() => {
+            resetState();
+          }} 
+        />
+      </div>
+    );
+  }
 
   if (selectedChat) {
     return (
@@ -84,7 +206,7 @@ export function TestRunsDashboard() {
 
         <div className="space-y-6 max-w-[800px] mx-auto">
           {selectedChat.messages.map((message: TestMessage) => (
-            <div key={message.id} className="space-y-2">
+            <div key={message.id || `msg-${Math.random()}`} className="space-y-2">
               {message.role === "user" ? (
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center flex-shrink-0">
@@ -102,23 +224,25 @@ export function TestRunsDashboard() {
                     <div className="bg-emerald-500/10 rounded-[var(--radius)]">
                       <CollapsibleJson content={message.content} />
                     </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge
-                        variant={message.isCorrect ? "outline" : "destructive"}
-                        className={
-                          message.isCorrect
-                            ? "bg-green-500/10"
-                            : "bg-red-500/10"
-                        }
-                      >
-                        {message.isCorrect ? "Correct" : "Incorrect"}
-                      </Badge>
-                      {message.explanation && (
-                        <span className="text-xs text-zinc-400">
-                          {message.explanation}
-                        </span>
-                      )}
-                    </div>
+                    {message.isCorrect !== undefined && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge
+                          variant={message.isCorrect ? "outline" : "destructive"}
+                          className={
+                            message.isCorrect
+                              ? "bg-green-500/10"
+                              : "bg-red-500/10"
+                          }
+                        >
+                          {message.isCorrect ? "Correct" : "Incorrect"}
+                        </Badge>
+                        {message.explanation && (
+                          <span className="text-xs text-zinc-400">
+                            {message.explanation}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
                     <span className="text-sm">🤖</span>

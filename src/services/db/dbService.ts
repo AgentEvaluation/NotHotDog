@@ -271,22 +271,58 @@ export class DbService {
     }
   }
   
-  // async updateTestRun(run: TestRun) {
-  //   try {
-  //     return await prisma.test_runs.update({
-  //       where: { id: run.id },
-  //       data: {
-  //         status: run.status,
-  //         total_tests: run.metrics.total,
-  //         passed_tests: run.metrics.passed,
-  //         failed_tests: run.metrics.failed,
-  //       }
-  //     });
-  //   } catch (error) {
-  //     console.error("Database error in updateTestRun:", error);
-  //     throw new Error("Failed to update test run");
-  //   }
-  // }
+  async updateTestRun(run: TestRun) {
+    try {
+      if (!run || !run.id) {
+        throw new Error("Invalid run object: missing id");
+      }
+  
+      // Make sure metrics exist and have default values
+      const metrics = run.metrics || { total: 0, passed: 0, failed: 0 };
+      
+      // Ensure chats is an array
+      const chats = Array.isArray(run.chats) ? run.chats : [];
+      
+      return await prisma.test_runs.update({
+        where: { id: run.id },
+        data: {
+          status: run.status || 'running',
+          total_tests: metrics.total,
+          passed_tests: metrics.passed,
+          failed_tests: metrics.failed,
+          test_conversations: {
+            deleteMany: {},
+            create: chats.map(chat => {
+              // Ensure messages is an array
+              const messages = Array.isArray(chat.messages) ? chat.messages : [];
+              
+              return {
+                id: chat.id,
+                scenario_id: chat.scenario || '',
+                persona_id: chat.personaId || '',
+                status: chat.status || 'running',
+                error_message: chat.error || null,
+                conversation_messages: {
+                  create: messages.map(msg => ({
+                    id: msg.id || crypto.randomUUID(),
+                    role: msg.role || 'user',
+                    content: msg.content || '',
+                    is_correct: Boolean(msg.metrics?.validationScore === 1),
+                    response_time: msg.metrics?.responseTime || 0,
+                    validation_score: msg.metrics?.validationScore || 0,
+                    metrics: msg.metrics || {}
+                  }))
+                }
+              };
+            })
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Database error in updateTestRun:", error);
+      throw new Error("Failed to update test run");
+    }
+  }
   
   async getTestVariations(testId: string): Promise<SimplifiedTestCases> {
     try {

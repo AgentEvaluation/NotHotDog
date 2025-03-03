@@ -8,7 +8,6 @@ import { TestRun, TestMessage } from '@/types/runs';
 import { TestChat } from '@/types/chat';
 import { Rule } from '@/services/agents/claude/types';
 
-
 export async function GET(request: Request) {
   try {
     const { userId } = await auth();
@@ -23,7 +22,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Failed to fetch test runs' }, { status: 500 });
   }
 }
-
 
 export async function POST(request: Request) {
   try {
@@ -72,6 +70,12 @@ export async function POST(request: Request) {
     const selectedPersonas = personaMapping.personaIds || [];
     const totalRuns = scenarios.length * selectedPersonas.length;
 
+    // Set up stream for SSE
+    const stream = new TransformStream();
+    const writer = stream.writable.getWriter();
+    const encoder = new TextEncoder();
+    let writerClosed = false;
+
     // Create new test run
     const testRun: TestRun = {
       id: uuidv4(),
@@ -92,7 +96,30 @@ export async function POST(request: Request) {
       createdBy: profile.id
     };
 
-    const completedChats: TestChat[] = [];
+    // Create initial test run in the database
+    await dbService.createTestRun(testRun);
+
+    // Safe write helper
+    const safeWrite = async (data: any) => {
+      if (writerClosed) return;
+      try {
+        await writer.write(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+      } catch (error) {
+        console.warn("Error writing to stream:", error);
+        writerClosed = true;
+      }
+    };
+
+    // Safe close helper
+    const safeClose = async () => {
+      if (writerClosed) return;
+      try {
+        await writer.close();
+        writerClosed = true;
+      } catch (error) {
+        console.warn("Error closing stream:", error);
+      }
+    };
 
     // Format rules to match the required Rule type
     const formattedRules: Rule[] = testConfig.rules.map(rule => ({
@@ -110,104 +137,179 @@ export async function POST(request: Request) {
       testConfig.inputFormat as Record<string, any> : 
       {};
 
-    // Run the tests
-    for (const scenario of scenarios) {
-      for (const personaId of selectedPersonas) {
-        console.log(personaId);
-        try {
-          const agent = new QaAgent({
-            headers: testConfig.headers,
-            modelId: modelFromHeader,
-            endpointUrl: testConfig.endpoint,
-            apiConfig: {
-              inputFormat: inputFormat,
-              outputFormat: typeof testConfig.latestOutput?.responseData === 'object' ? 
-                testConfig.latestOutput.responseData as Record<string, any> : 
-                {},
-              rules: formattedRules
-            },
-            persona: personaId,
-            userApiKey: apiKey
-          });
+    // Run the tests asynchronously
+    (async () => {
+      try {
+        const completedChats: TestChat[] = [];
 
-          const result = await agent.runTest(
-            scenario.scenario,
-            scenario.expectedOutput || ''
-          );
+        // Run the tests
+        for (const scenario of scenarios) {
+          for (const personaId of selectedPersonas) {
+            try {
+              // Create a chat ID
+              const chatId = uuidv4();
+              
+              // Send chat info event
+              await safeWrite({
+                type: "chat_info",
+                chatId,
+                scenarioId: scenario.id,
+                scenarioName: scenario.scenario,
+                personaId
+              });
+              
+              // Create an agent with message callback
+              const agent = new QaAgent({
+                headers: testConfig.headers,
+                modelId: modelFromHeader,
+                endpointUrl: testConfig.endpoint,
+                apiConfig: {
+                  inputFormat: inputFormat,
+                  outputFormat: typeof testConfig.latestOutput?.responseData === 'object' ? 
+                    testConfig.latestOutput.responseData as Record<string, any> : 
+                    {},
+                  rules: formattedRules
+                },
+                persona: personaId,
+                userApiKey: apiKey
+              }, 
+              // Message callback that emits events
+              async (message: TestMessage) => {
+                await safeWrite({
+                  type: "message",
+                  message,
+                  scenarioId: scenario.id,
+                  scenarioName: scenario.scenario,
+                  personaId
+                });
+              });
 
-          const chatId = uuidv4();
-          
-          const chat: TestChat = {
-            id: chatId,
-            name: scenario.scenario,
-            scenario: scenario.id,
-            status: 'passed',
-            messages: result.conversation.allMessages,
-            metrics: {
-              correct: result.validation.passedTest ? 1 : 0,
-              incorrect: result.validation.passedTest ? 0 : 1,
-              responseTime: [result.validation.metrics.responseTime],
-              validationScores: [result.validation.passedTest ? 1 : 0],
-              contextRelevance: [1],
-              validationDetails: {
-                customFailure: !result.validation.passedTest,
-                containsFailures: [],
-                notContainsFailures: []
-              }
-            },
-            timestamp: new Date().toISOString(),
-            personaId: personaId
-          };
+              const result = await agent.runTest(
+                scenario.scenario,
+                scenario.expectedOutput || ''
+              );
+              
+              // Create chat from result
+              const chat: TestChat = {
+                id: chatId,
+                name: scenario.scenario,
+                scenario: scenario.id,
+                status: result.validation.passedTest ? 'passed' : 'failed',
+                messages: result.conversation.allMessages,
+                metrics: {
+                  correct: result.validation.passedTest ? 1 : 0,
+                  incorrect: result.validation.passedTest ? 0 : 1,
+                  responseTime: [result.validation.metrics.responseTime],
+                  validationScores: [result.validation.passedTest ? 1 : 0],
+                  contextRelevance: [1],
+                  validationDetails: {
+                    customFailure: !result.validation.passedTest,
+                    containsFailures: [],
+                    notContainsFailures: []
+                  }
+                },
+                timestamp: new Date().toISOString(),
+                personaId: personaId
+              };
 
-          completedChats.push(chat);
-          testRun.metrics.passed += result.validation.passedTest ? 1 : 0;
-          testRun.metrics.failed += result.validation.passedTest ? 0 : 1;
-          testRun.metrics.correct += result.validation.passedTest ? 1 : 0;
-          testRun.metrics.incorrect += result.validation.passedTest ? 0 : 1;
-          
-        } catch (error: any) { // Type error as any
-          console.error('Error in test execution:', error);
-          const chat: TestChat = {
-            id: uuidv4(),
-            name: scenario.scenario,
-            scenario: scenario.id,
-            status: 'failed',
-            messages: [],
-            metrics: {
-              correct: 0,
-              incorrect: 1,
-              responseTime: [],
-              validationScores: [],
-              contextRelevance: [],
-              validationDetails: {
-                customFailure: true,
-                containsFailures: [],
-                notContainsFailures: []
-              }
-            },
-            timestamp: new Date().toISOString(),
-            error: error.message || 'Unknown error occurred',
-            personaId: personaId
-          };
-          
-          completedChats.push(chat);
-          testRun.metrics.failed += 1;
-          testRun.metrics.incorrect += 1;
+              completedChats.push(chat);
+              testRun.metrics.passed += result.validation.passedTest ? 1 : 0;
+              testRun.metrics.failed += result.validation.passedTest ? 0 : 1;
+              testRun.metrics.correct += result.validation.passedTest ? 1 : 0;
+              testRun.metrics.incorrect += result.validation.passedTest ? 0 : 1;
+              
+              // Send chat completion event
+              await safeWrite({
+                type: "chat_complete",
+                chat,
+                testRunId: testRun.id
+              });
+              
+            } catch (error: any) {
+              console.error('Error in test execution:', error);
+              
+              // Create an error chat
+              const chatId = uuidv4();
+              const chat: TestChat = {
+                id: chatId,
+                name: scenario.scenario,
+                scenario: scenario.id,
+                status: 'failed',
+                messages: [],
+                metrics: {
+                  correct: 0,
+                  incorrect: 1,
+                  responseTime: [],
+                  validationScores: [],
+                  contextRelevance: [],
+                  validationDetails: {
+                    customFailure: true,
+                    containsFailures: [],
+                    notContainsFailures: []
+                  }
+                },
+                timestamp: new Date().toISOString(),
+                error: error.message || 'Unknown error occurred',
+                personaId: personaId
+              };
+              
+              completedChats.push(chat);
+              testRun.metrics.failed += 1;
+              testRun.metrics.incorrect += 1;
+              
+              // Send error event
+              await safeWrite({
+                type: "chat_error",
+                error: error.message,
+                chatId,
+                scenarioId: scenario.id,
+                scenarioName: scenario.scenario,
+                personaId
+              });
+            }
+          }
         }
+
+        testRun.chats = completedChats;
+        testRun.status = 'completed' as const;
+        
+        // Update test run in the database
+        await dbService.updateTestRun(testRun);
+        
+        // Send completion event
+        await safeWrite({
+          type: "complete",
+          testRunId: testRun.id
+        });
+      } catch (error: any) {
+        console.error('Error executing test:', error);
+        
+        // Send error event
+        await safeWrite({
+          type: "error",
+          error: error.message || 'An error occurred during test execution'
+        });
+        
+        // Mark the test run as failed
+        testRun.status = 'failed' as const;
+        await dbService.updateTestRun(testRun);
+      } finally {
+        await safeClose();
       }
-    }
+    })();
 
-    testRun.chats = completedChats;
-    testRun.status = 'completed' as const; // Explicitly type as TestRunStatus
-    
-    // Save the test run to the database
-    await dbService.createTestRun(testRun);
-
-    return NextResponse.json(testRun);
-  } catch (error: any) { // Type error as any
-    console.error('Error executing test:', error);
+    // Return the stream as the response
+    return new Response(stream.readable, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        "Connection": "keep-alive"
+      }
+    });
+  } catch (error: any) {
+    console.error('Error setting up test execution:', error);
     return NextResponse.json(
-      { error: error.message || 'An error occurred during test execution' },
+      { error: error.message || 'An error occurred setting up test execution' },
       { status: 500 }
     );
   }

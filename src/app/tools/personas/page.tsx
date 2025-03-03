@@ -356,11 +356,28 @@ export default function PersonasScreen() {
       </div>
 
       <Tabs defaultValue="all" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
-          <TabsTrigger value="all">All Personas</TabsTrigger>
-          <TabsTrigger value="standard">Standard</TabsTrigger>
-          <TabsTrigger value="custom">Custom</TabsTrigger>
+      <TabsList className="grid w-full grid-cols-3 mb-6 border-b border-muted">
+        <TabsTrigger
+            value="all"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+        >
+            All Personas
+        </TabsTrigger>
+        <TabsTrigger
+            value="standard"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+        >
+            Standard
+        </TabsTrigger>
+        <TabsTrigger
+            value="custom"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+        >
+            Custom
+        </TabsTrigger>
         </TabsList>
+
+
         <TabsContent value="all" className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {personas.map((persona) => (

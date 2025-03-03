@@ -49,3 +49,5 @@ yarn.lock
 # Optional
 *.log
 .env
+# clerk configuration (can include secrets)
+/.clerk/

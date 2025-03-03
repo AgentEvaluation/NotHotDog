@@ -3,20 +3,13 @@
 import { useState } from "react"
 import { Plus, Edit, Trash2, Check, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function PersonasScreen() {
@@ -27,10 +20,14 @@ export default function PersonasScreen() {
       description: "Speaks in long sentences, asks a lot of questions",
       temperature: 0.8,
       messageLength: "Long",
-      questionFrequency: "High",
-      technicalLevel: "Low",
-      isVerbose: true,
-      isEmotional: true,
+      primaryIntent: "Information-seeking",
+      communicationStyle: "Casual",
+      techSavviness: "Beginner",
+      emotionalState: "Curious",
+      errorTolerance: "High",
+      decisionSpeed: "Fast",
+      slangUsage: "Moderate",
+      historyBasedMemory: true,
     },
     {
       id: 2,
@@ -38,10 +35,14 @@ export default function PersonasScreen() {
       description: "Brief and to-the-point responses",
       temperature: 0.3,
       messageLength: "Short",
-      questionFrequency: "Low",
-      technicalLevel: "Medium",
-      isVerbose: false,
-      isEmotional: false,
+      primaryIntent: "Transactional",
+      communicationStyle: "Formal",
+      techSavviness: "Intermediate",
+      emotionalState: "Neutral",
+      errorTolerance: "Low",
+      decisionSpeed: "Fast",
+      slangUsage: "None",
+      historyBasedMemory: false,
     },
     {
       id: 3,
@@ -49,10 +50,14 @@ export default function PersonasScreen() {
       description: "Uses technical vocabulary and detailed explanations",
       temperature: 0.4,
       messageLength: "Medium",
-      questionFrequency: "Medium",
-      technicalLevel: "High",
-      isVerbose: true,
-      isEmotional: false,
+      primaryIntent: "Support Query",
+      communicationStyle: "Detailed",
+      techSavviness: "Advanced",
+      emotionalState: "Neutral",
+      errorTolerance: "Low",
+      decisionSpeed: "Thoughtful",
+      slangUsage: "None",
+      historyBasedMemory: true,
     },
     {
       id: 4,
@@ -60,10 +65,14 @@ export default function PersonasScreen() {
       description: "Casual, approachable tone with personal touches",
       temperature: 0.7,
       messageLength: "Medium",
-      questionFrequency: "Medium",
-      technicalLevel: "Low",
-      isVerbose: false,
-      isEmotional: true,
+      primaryIntent: "Feedback",
+      communicationStyle: "Casual",
+      techSavviness: "Beginner",
+      emotionalState: "Happy",
+      errorTolerance: "High",
+      decisionSpeed: "Hesitant",
+      slangUsage: "Moderate",
+      historyBasedMemory: true,
     },
   ])
 
@@ -73,10 +82,14 @@ export default function PersonasScreen() {
     description: "",
     temperature: 0.5,
     messageLength: "Medium",
-    questionFrequency: "Medium",
-    technicalLevel: "Medium",
-    isVerbose: false,
-    isEmotional: false,
+    primaryIntent: "Information-seeking",
+    communicationStyle: "Casual",
+    techSavviness: "Intermediate",
+    emotionalState: "Neutral",
+    errorTolerance: "Medium",
+    decisionSpeed: "Thoughtful",
+    slangUsage: "None",
+    historyBasedMemory: false,
   })
   const [isNewPersonaDialogOpen, setIsNewPersonaDialogOpen] = useState(false)
 
@@ -101,10 +114,14 @@ export default function PersonasScreen() {
       description: "",
       temperature: 0.5,
       messageLength: "Medium",
-      questionFrequency: "Medium",
-      technicalLevel: "Medium",
-      isVerbose: false,
-      isEmotional: false,
+      primaryIntent: "Information-seeking",
+      communicationStyle: "Casual",
+      techSavviness: "Intermediate",
+      emotionalState: "Neutral",
+      errorTolerance: "Medium",
+      decisionSpeed: "Thoughtful",
+      slangUsage: "None",
+      historyBasedMemory: false,
     })
     setIsNewPersonaDialogOpen(false)
   }
@@ -127,39 +144,35 @@ export default function PersonasScreen() {
               New Persona
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>Create New Persona</DialogTitle>
               <div>Define a new AI personality with custom traits and behaviors.</div>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">
-                  Name
+            <div className="grid grid-cols-3 items-center gap-4">
+                <Label htmlFor="name" className="text-right w-40"> {/* Adjust width here */}
+                    Name
                 </Label>
-                <Input
-                  id="name"
-                  value={newPersona.name}
-                  onChange={(e) => setNewPersona({ ...newPersona, name: e.target.value })}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="description" className="text-right">
+                <Input id="name" value={newPersona.name} onChange={(e) => setNewPersona({ ...newPersona, name: e.target.value })} className="col-span-2" />
+            </div>
+
+              <div className="grid grid-cols-3 items-center gap-4">
+                <Label htmlFor="description" className="text-right w-40">
                   Description
                 </Label>
                 <Input
                   id="description"
                   value={newPersona.description}
                   onChange={(e) => setNewPersona({ ...newPersona, description: e.target.value })}
-                  className="col-span-3"
+                  className="col-span-2"
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="temperature" className="text-right">
+              <div className="grid grid-cols-3 items-center gap-4">
+                <Label htmlFor="temperature" className="text-right w-40">
                   Temperature: {newPersona.temperature.toFixed(1)}
                 </Label>
-                <div className="col-span-3">
+                <div className="col-span-2">
                   <Slider
                     id="temperature"
                     min={0}
@@ -170,15 +183,15 @@ export default function PersonasScreen() {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="messageLength" className="text-right">
+              <div className="grid grid-cols-3 items-center gap-4">
+                <Label htmlFor="messageLength" className="text-right w-40">
                   Message Length
                 </Label>
                 <Select
                   value={newPersona.messageLength}
                   onValueChange={(value) => setNewPersona({ ...newPersona, messageLength: value })}
                 >
-                  <SelectTrigger className="col-span-3">
+                  <SelectTrigger className="col-span-2">
                     <SelectValue placeholder="Select length" />
                   </SelectTrigger>
                   <SelectContent>
@@ -188,66 +201,147 @@ export default function PersonasScreen() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="questionFrequency" className="text-right">
-                  Question Frequency
+              <div className="grid grid-cols-3 items-center gap-4">
+                <Label htmlFor="primaryIntent" className="text-right w-40">
+                  Primary Intent
                 </Label>
                 <Select
-                  value={newPersona.questionFrequency}
-                  onValueChange={(value) => setNewPersona({ ...newPersona, questionFrequency: value })}
+                  value={newPersona.primaryIntent}
+                  onValueChange={(value) => setNewPersona({ ...newPersona, primaryIntent: value })}
                 >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Select frequency" />
+                  <SelectTrigger className="col-span-2">
+                    <SelectValue placeholder="Select intent" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Low">Low</SelectItem>
-                    <SelectItem value="Medium">Medium</SelectItem>
-                    <SelectItem value="High">High</SelectItem>
+                    <SelectItem value="Information-seeking">Information-seeking</SelectItem>
+                    <SelectItem value="Transactional">Transactional</SelectItem>
+                    <SelectItem value="Support Query">Support Query</SelectItem>
+                    <SelectItem value="Feedback">Feedback</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="technicalLevel" className="text-right">
-                  Technical Level
+              <div className="grid grid-cols-3 items-center gap-4">
+                <Label htmlFor="communicationStyle" className="text-right w-40">
+                  Communication Style
                 </Label>
                 <Select
-                  value={newPersona.technicalLevel}
-                  onValueChange={(value) => setNewPersona({ ...newPersona, technicalLevel: value })}
+                  value={newPersona.communicationStyle}
+                  onValueChange={(value) => setNewPersona({ ...newPersona, communicationStyle: value })}
                 >
-                  <SelectTrigger className="col-span-3">
+                  <SelectTrigger className="col-span-2">
+                    <SelectValue placeholder="Select style" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Formal">Formal</SelectItem>
+                    <SelectItem value="Casual">Casual</SelectItem>
+                    <SelectItem value="Sarcastic">Sarcastic</SelectItem>
+                    <SelectItem value="Concise">Concise</SelectItem>
+                    <SelectItem value="Detailed">Detailed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-3 items-center gap-4">
+                <Label htmlFor="techSavviness" className="text-right w-40">
+                  Tech-savviness
+                </Label>
+                <Select
+                  value={newPersona.techSavviness}
+                  onValueChange={(value) => setNewPersona({ ...newPersona, techSavviness: value })}
+                >
+                  <SelectTrigger className="col-span-2">
                     <SelectValue placeholder="Select level" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="Beginner">Beginner</SelectItem>
+                    <SelectItem value="Intermediate">Intermediate</SelectItem>
+                    <SelectItem value="Advanced">Advanced</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-3 items-center gap-4">
+                <Label htmlFor="emotionalState" className="text-right w-40">
+                  Emotional State
+                </Label>
+                <Select
+                  value={newPersona.emotionalState}
+                  onValueChange={(value) => setNewPersona({ ...newPersona, emotionalState: value })}
+                >
+                  <SelectTrigger className="col-span-2">
+                    <SelectValue placeholder="Select state" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Neutral">Neutral</SelectItem>
+                    <SelectItem value="Frustrated">Frustrated</SelectItem>
+                    <SelectItem value="Happy">Happy</SelectItem>
+                    <SelectItem value="Curious">Curious</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-3 items-center gap-4">
+                <Label htmlFor="errorTolerance" className="text-right w-40">
+                  Error Tolerance
+                </Label>
+                <Select
+                  value={newPersona.errorTolerance}
+                  onValueChange={(value) => setNewPersona({ ...newPersona, errorTolerance: value })}
+                >
+                  <SelectTrigger className="col-span-2">
+                    <SelectValue placeholder="Select tolerance" />
+                  </SelectTrigger>
+                  <SelectContent>
                     <SelectItem value="Low">Low</SelectItem>
                     <SelectItem value="Medium">Medium</SelectItem>
                     <SelectItem value="High">High</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="isVerbose" className="text-right">
-                  Verbose
+              <div className="grid grid-cols-3 items-center gap-4">
+                <Label htmlFor="decisionSpeed" className="text-right w-40">
+                  Decision Speed
                 </Label>
-                <div className="flex items-center space-x-2 col-span-3">
-                  <Switch
-                    id="isVerbose"
-                    checked={newPersona.isVerbose}
-                    onCheckedChange={(checked) => setNewPersona({ ...newPersona, isVerbose: checked })}
-                  />
-                  <Label htmlFor="isVerbose">{newPersona.isVerbose ? "Yes" : "No"}</Label>
-                </div>
+                <Select
+                  value={newPersona.decisionSpeed}
+                  onValueChange={(value) => setNewPersona({ ...newPersona, decisionSpeed: value })}
+                >
+                  <SelectTrigger className="col-span-2">
+                    <SelectValue placeholder="Select speed" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Fast">Fast</SelectItem>
+                    <SelectItem value="Thoughtful">Thoughtful</SelectItem>
+                    <SelectItem value="Hesitant">Hesitant</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="isEmotional" className="text-right">
-                  Emotional
+              <div className="grid grid-cols-3 items-center gap-4">
+                <Label htmlFor="slangUsage" className="text-right w-40">
+                  Slang Usage
                 </Label>
-                <div className="flex items-center space-x-2 col-span-3">
+                <Select
+                  value={newPersona.slangUsage}
+                  onValueChange={(value) => setNewPersona({ ...newPersona, slangUsage: value })}
+                >
+                  <SelectTrigger className="col-span-2">
+                    <SelectValue placeholder="Select usage" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="None">None</SelectItem>
+                    <SelectItem value="Moderate">Moderate</SelectItem>
+                    <SelectItem value="Heavy">Heavy</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-3 items-center gap-4">
+                <Label htmlFor="historyBasedMemory" className="text-right w-40">
+                  History-based Memory
+                </Label>
+                <div className="flex items-center space-x-2 col-span-2">
                   <Switch
-                    id="isEmotional"
-                    checked={newPersona.isEmotional}
-                    onCheckedChange={(checked) => setNewPersona({ ...newPersona, isEmotional: checked })}
+                    id="historyBasedMemory"
+                    checked={newPersona.historyBasedMemory}
+                    onCheckedChange={(checked) => setNewPersona({ ...newPersona, historyBasedMemory: checked })}
                   />
-                  <Label htmlFor="isEmotional">{newPersona.isEmotional ? "Yes" : "No"}</Label>
+                  <Label htmlFor="historyBasedMemory">{newPersona.historyBasedMemory ? "Yes" : "No"}</Label>
                 </div>
               </div>
             </div>
@@ -268,7 +362,7 @@ export default function PersonasScreen() {
           <TabsTrigger value="custom">Custom</TabsTrigger>
         </TabsList>
         <TabsContent value="all" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {personas.map((persona) => (
               <Card key={persona.id} className="relative">
                 {editingPersona && editingPersona.id === persona.id ? (
@@ -317,12 +411,80 @@ export default function PersonasScreen() {
                           </Select>
                         </div>
                         <div className="space-y-1">
-                          <Label>Question Frequency</Label>
+                          <Label>Primary Intent</Label>
                           <Select
-                            value={editingPersona.questionFrequency}
+                            value={editingPersona.primaryIntent}
+                            onValueChange={(value) => setEditingPersona({ ...editingPersona, primaryIntent: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Information-seeking">Information-seeking</SelectItem>
+                              <SelectItem value="Transactional">Transactional</SelectItem>
+                              <SelectItem value="Support Query">Support Query</SelectItem>
+                              <SelectItem value="Feedback">Feedback</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label>Communication Style</Label>
+                          <Select
+                            value={editingPersona.communicationStyle}
                             onValueChange={(value) =>
-                              setEditingPersona({ ...editingPersona, questionFrequency: value })
+                              setEditingPersona({ ...editingPersona, communicationStyle: value })
                             }
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Formal">Formal</SelectItem>
+                              <SelectItem value="Casual">Casual</SelectItem>
+                              <SelectItem value="Sarcastic">Sarcastic</SelectItem>
+                              <SelectItem value="Concise">Concise</SelectItem>
+                              <SelectItem value="Detailed">Detailed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label>Tech-savviness</Label>
+                          <Select
+                            value={editingPersona.techSavviness}
+                            onValueChange={(value) => setEditingPersona({ ...editingPersona, techSavviness: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Beginner">Beginner</SelectItem>
+                              <SelectItem value="Intermediate">Intermediate</SelectItem>
+                              <SelectItem value="Advanced">Advanced</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label>Emotional State</Label>
+                          <Select
+                            value={editingPersona.emotionalState}
+                            onValueChange={(value) => setEditingPersona({ ...editingPersona, emotionalState: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Neutral">Neutral</SelectItem>
+                              <SelectItem value="Frustrated">Frustrated</SelectItem>
+                              <SelectItem value="Happy">Happy</SelectItem>
+                              <SelectItem value="Curious">Curious</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label>Error Tolerance</Label>
+                          <Select
+                            value={editingPersona.errorTolerance}
+                            onValueChange={(value) => setEditingPersona({ ...editingPersona, errorTolerance: value })}
                           >
                             <SelectTrigger>
                               <SelectValue />
@@ -335,36 +497,44 @@ export default function PersonasScreen() {
                           </Select>
                         </div>
                         <div className="space-y-1">
-                          <Label>Technical Level</Label>
+                          <Label>Decision Speed</Label>
                           <Select
-                            value={editingPersona.technicalLevel}
-                            onValueChange={(value) => setEditingPersona({ ...editingPersona, technicalLevel: value })}
+                            value={editingPersona.decisionSpeed}
+                            onValueChange={(value) => setEditingPersona({ ...editingPersona, decisionSpeed: value })}
                           >
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Low">Low</SelectItem>
-                              <SelectItem value="Medium">Medium</SelectItem>
-                              <SelectItem value="High">High</SelectItem>
+                              <SelectItem value="Fast">Fast</SelectItem>
+                              <SelectItem value="Thoughtful">Thoughtful</SelectItem>
+                              <SelectItem value="Hesitant">Hesitant</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label>Slang Usage</Label>
+                          <Select
+                            value={editingPersona.slangUsage}
+                            onValueChange={(value) => setEditingPersona({ ...editingPersona, slangUsage: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="None">None</SelectItem>
+                              <SelectItem value="Moderate">Moderate</SelectItem>
+                              <SelectItem value="Heavy">Heavy</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                         <div className="flex items-center justify-between">
-                          <Label htmlFor={`verbose-${persona.id}`}>Verbose</Label>
+                          <Label htmlFor={`memory-${persona.id}`}>History-based Memory</Label>
                           <Switch
-                            id={`verbose-${persona.id}`}
-                            checked={editingPersona.isVerbose}
-                            onCheckedChange={(checked) => setEditingPersona({ ...editingPersona, isVerbose: checked })}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor={`emotional-${persona.id}`}>Emotional</Label>
-                          <Switch
-                            id={`emotional-${persona.id}`}
-                            checked={editingPersona.isEmotional}
+                            id={`memory-${persona.id}`}
+                            checked={editingPersona.historyBasedMemory}
                             onCheckedChange={(checked) =>
-                              setEditingPersona({ ...editingPersona, isEmotional: checked })
+                              setEditingPersona({ ...editingPersona, historyBasedMemory: checked })
                             }
                           />
                         </div>
@@ -397,19 +567,39 @@ export default function PersonasScreen() {
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <Label className="text-xs text-muted-foreground">Message Length</Label>
-                            <p className="font-medium">{persona.messageLength}</p>
+                            <p>{persona.messageLength}</p>
                           </div>
                           <div>
-                            <Label className="text-xs text-muted-foreground">Question Frequency</Label>
-                            <p className="font-medium">{persona.questionFrequency}</p>
+                            <Label className="text-xs text-muted-foreground">Primary Intent</Label>
+                            <p >{persona.primaryIntent}</p>
                           </div>
                           <div>
-                            <Label className="text-xs text-muted-foreground">Technical Level</Label>
-                            <p className="font-medium">{persona.technicalLevel}</p>
+                            <Label className="text-xs text-muted-foreground">Communication Style</Label>
+                            <p >{persona.communicationStyle}</p>
                           </div>
                           <div>
-                            <Label className="text-xs text-muted-foreground">Verbose</Label>
-                            <p className="font-medium">{persona.isVerbose ? "Yes" : "No"}</p>
+                            <Label className="text-xs text-muted-foreground">Tech-savviness</Label>
+                            <p >{persona.techSavviness}</p>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Emotional State</Label>
+                            <p >{persona.emotionalState}</p>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Error Tolerance</Label>
+                            <p >{persona.errorTolerance}</p>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Decision Speed</Label>
+                            <p>{persona.decisionSpeed}</p>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Slang Usage</Label>
+                            <p >{persona.slangUsage}</p>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">History-based Memory</Label>
+                            <p>{persona.historyBasedMemory ? "Yes" : "No"}</p>
                           </div>
                         </div>
                       </div>
@@ -451,16 +641,36 @@ export default function PersonasScreen() {
                         <p className="font-medium">{persona.messageLength}</p>
                       </div>
                       <div>
-                        <Label className="text-xs text-muted-foreground">Question Frequency</Label>
-                        <p className="font-medium">{persona.questionFrequency}</p>
+                        <Label className="text-xs text-muted-foreground">Primary Intent</Label>
+                        <p className="font-medium">{persona.primaryIntent}</p>
                       </div>
                       <div>
-                        <Label className="text-xs text-muted-foreground">Technical Level</Label>
-                        <p className="font-medium">{persona.technicalLevel}</p>
+                        <Label className="text-xs text-muted-foreground">Communication Style</Label>
+                        <p className="font-medium">{persona.communicationStyle}</p>
                       </div>
                       <div>
-                        <Label className="text-xs text-muted-foreground">Verbose</Label>
-                        <p className="font-medium">{persona.isVerbose ? "Yes" : "No"}</p>
+                        <Label className="text-xs text-muted-foreground">Tech-savviness</Label>
+                        <p className="font-medium">{persona.techSavviness}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Emotional State</Label>
+                        <p className="font-medium">{persona.emotionalState}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Error Tolerance</Label>
+                        <p className="font-medium">{persona.errorTolerance}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Decision Speed</Label>
+                        <p className="font-medium">{persona.decisionSpeed}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Slang Usage</Label>
+                        <p className="font-medium">{persona.slangUsage}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">History-based Memory</Label>
+                        <p className="font-medium">{persona.historyBasedMemory ? "Yes" : "No"}</p>
                       </div>
                     </div>
                   </div>
@@ -525,12 +735,78 @@ export default function PersonasScreen() {
                             </Select>
                           </div>
                           <div className="space-y-1">
-                            <Label>Question Frequency</Label>
+                            <Label>Primary Intent</Label>
                             <Select
-                              value={editingPersona.questionFrequency}
-                              onValueChange={(value) =>
-                                setEditingPersona({ ...editingPersona, questionFrequency: value })
-                              }
+                              value={editingPersona.primaryIntent}
+                              onValueChange={(value) => setEditingPersona({ ...editingPersona, primaryIntent: value })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Information-seeking">Information-seeking</SelectItem>
+                                <SelectItem value="Transactional">Transactional</SelectItem>
+                                <SelectItem value="Support Query">Support Query</SelectItem>
+                                <SelectItem value="Feedback">Feedback</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label>Communication Style</Label>
+                            <Select
+                              value={editingPersona.communicationStyle}
+                              onValueChange={(value) => setEditingPersona({ ...editingPersona, communicationStyle: value })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Formal">Formal</SelectItem>
+                                <SelectItem value="Casual">Casual</SelectItem>
+                                <SelectItem value="Sarcastic">Sarcastic</SelectItem>
+                                <SelectItem value="Concise">Concise</SelectItem>
+                                <SelectItem value="Detailed">Detailed</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label>Tech-savviness</Label>
+                            <Select
+                              value={editingPersona.techSavviness}
+                              onValueChange={(value) => setEditingPersona({ ...editingPersona, techSavviness: value })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Beginner">Beginner</SelectItem>
+                                <SelectItem value="Intermediate">Intermediate</SelectItem>
+                                <SelectItem value="Advanced">Advanced</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label>Emotional State</Label>
+                            <Select
+                              value={editingPersona.emotionalState}
+                              onValueChange={(value) => setEditingPersona({ ...editingPersona, emotionalState: value })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Neutral">Neutral</SelectItem>
+                                <SelectItem value="Frustrated">Frustrated</SelectItem>
+                                <SelectItem value="Happy">Happy</SelectItem>
+                                <SelectItem value="Curious">Curious</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label>Error Tolerance</Label>
+                            <Select
+                              value={editingPersona.errorTolerance}
+                              onValueChange={(value) => setEditingPersona({ ...editingPersona, errorTolerance: value })}
                             >
                               <SelectTrigger>
                                 <SelectValue />
@@ -543,39 +819,44 @@ export default function PersonasScreen() {
                             </Select>
                           </div>
                           <div className="space-y-1">
-                            <Label>Technical Level</Label>
+                            <Label>Decision Speed</Label>
                             <Select
-                              value={editingPersona.technicalLevel}
-                              onValueChange={(value) => setEditingPersona({ ...editingPersona, technicalLevel: value })}
+                                value={editingPersona.decisionSpeed}
+                                onValueChange={(value) => setEditingPersona({ ...editingPersona, decisionSpeed: value })}
+                                >
+
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Fast">Fast</SelectItem>
+                                <SelectItem value="Thoughtful">Thoughtful</SelectItem>
+                                <SelectItem value="Hesitant">Hesitant</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label>Slang Usage</Label>
+                            <Select
+                              value={editingPersona.slangUsage}
+                              onValueChange={(value) => setEditingPersona({ ...editingPersona, slangUsage: value })}
                             >
                               <SelectTrigger>
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="Low">Low</SelectItem>
-                                <SelectItem value="Medium">Medium</SelectItem>
-                                <SelectItem value="High">High</SelectItem>
+                                <SelectItem value="None">None</SelectItem>
+                                <SelectItem value="Moderate">Moderate</SelectItem>
+                                <SelectItem value="Heavy">Heavy</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
                           <div className="flex items-center justify-between">
-                            <Label htmlFor={`verbose-${persona.id}`}>Verbose</Label>
+                            <Label htmlFor={`memory-${persona.id}`}>History-based Memory</Label>
                             <Switch
-                              id={`verbose-${persona.id}`}
-                              checked={editingPersona.isVerbose}
-                              onCheckedChange={(checked) =>
-                                setEditingPersona({ ...editingPersona, isVerbose: checked })
-                              }
-                            />
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <Label htmlFor={`emotional-${persona.id}`}>Emotional</Label>
-                            <Switch
-                              id={`emotional-${persona.id}`}
-                              checked={editingPersona.isEmotional}
-                              onCheckedChange={(checked) =>
-                                setEditingPersona({ ...editingPersona, isEmotional: checked })
-                              }
+                              id={`memory-${persona.id}`}
+                              checked={editingPersona.historyBasedMemory}
+                              onCheckedChange={(checked) => setEditingPersona({ ...editingPersona, historyBasedMemory: checked })}
                             />
                           </div>
                         </div>
@@ -610,16 +891,36 @@ export default function PersonasScreen() {
                               <p className="font-medium">{persona.messageLength}</p>
                             </div>
                             <div>
-                              <Label className="text-xs text-muted-foreground">Question Frequency</Label>
-                              <p className="font-medium">{persona.questionFrequency}</p>
+                              <Label className="text-xs text-muted-foreground">Primary Intent</Label>
+                              <p className="font-medium">{persona.primaryIntent}</p>
                             </div>
                             <div>
-                              <Label className="text-xs text-muted-foreground">Technical Level</Label>
-                              <p className="font-medium">{persona.technicalLevel}</p>
+                              <Label className="text-xs text-muted-foreground">Communication Style</Label>
+                              <p className="font-medium">{persona.communicationStyle}</p>
                             </div>
                             <div>
-                              <Label className="text-xs text-muted-foreground">Verbose</Label>
-                              <p className="font-medium">{persona.isVerbose ? "Yes" : "No"}</p>
+                              <Label className="text-xs text-muted-foreground">Tech-savviness</Label>
+                              <p className="font-medium">{persona.techSavviness}</p>
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Emotional State</Label>
+                              <p className="font-medium">{persona.emotionalState}</p>
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Error Tolerance</Label>
+                              <p className="font-medium">{persona.errorTolerance}</p>
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Decision Speed</Label>
+                              <p className="font-medium">{persona.decisionSpeed}</p>
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Slang Usage</Label>
+                              <p className="font-medium">{persona.slangUsage}</p>
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">History-based Memory</Label>
+                              <p className="font-medium">{persona.historyBasedMemory ? "Yes" : "No"}</p>
                             </div>
                           </div>
                         </div>

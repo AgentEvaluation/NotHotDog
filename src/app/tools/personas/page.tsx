@@ -109,7 +109,7 @@ export default function PersonasScreen() {
         
         <TabsContent value="standard" className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {personas.slice(0, 4).map((persona) => (
+            {personas.filter(p => defaultPersonas.some(dp => dp.id === p.id)).map((persona) => (
               <PersonaCard
                 key={persona.id}
                 persona={persona}
@@ -128,7 +128,8 @@ export default function PersonasScreen() {
         <TabsContent value="custom" className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {personas.slice(4).length > 0 ? (
-              personas.slice(4).map((persona) => (
+              personas.filter(p => !defaultPersonas.some(dp => dp.id === p.id))
+              .map((persona) => (
                 <PersonaCard
                   key={persona.id}
                   persona={persona}

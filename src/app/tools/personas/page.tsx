@@ -8,70 +8,10 @@ import { PersonaDialog } from "./personaDialog"
 import { PersonaCard } from "./personaCard"
 import { EmptyCustomPersonas } from "./emptyCustomPersonas"
 import { PersonaType, defaultPersona } from "./types"
+import { defaultPersonas } from "./defaultPersonas"
 
 export default function PersonasScreen() {
-  const [personas, setPersonas] = useState<PersonaType[]>([
-    {
-      id: 1,
-      name: "Chatty",
-      description: "Speaks in long sentences, asks a lot of questions",
-      temperature: 0.8,
-      messageLength: "Long",
-      primaryIntent: "Information-seeking",
-      communicationStyle: "Casual",
-      techSavviness: "Beginner",
-      emotionalState: "Curious",
-      errorTolerance: "High",
-      decisionSpeed: "Fast",
-      slangUsage: "Moderate",
-      historyBasedMemory: true,
-    },
-    {
-      id: 2,
-      name: "Concise",
-      description: "Brief and to-the-point responses",
-      temperature: 0.3,
-      messageLength: "Short",
-      primaryIntent: "Transactional",
-      communicationStyle: "Formal",
-      techSavviness: "Intermediate",
-      emotionalState: "Neutral",
-      errorTolerance: "Low",
-      decisionSpeed: "Fast",
-      slangUsage: "None",
-      historyBasedMemory: false,
-    },
-    {
-      id: 3,
-      name: "Technical",
-      description: "Uses technical vocabulary and detailed explanations",
-      temperature: 0.4,
-      messageLength: "Medium",
-      primaryIntent: "Support Query",
-      communicationStyle: "Detailed",
-      techSavviness: "Advanced",
-      emotionalState: "Neutral",
-      errorTolerance: "Low",
-      decisionSpeed: "Thoughtful",
-      slangUsage: "None",
-      historyBasedMemory: true,
-    },
-    {
-      id: 4,
-      name: "Friendly",
-      description: "Casual, approachable tone with personal touches",
-      temperature: 0.7,
-      messageLength: "Medium",
-      primaryIntent: "Feedback",
-      communicationStyle: "Casual",
-      techSavviness: "Beginner",
-      emotionalState: "Happy",
-      errorTolerance: "High",
-      decisionSpeed: "Hesitant",
-      slangUsage: "Moderate",
-      historyBasedMemory: true,
-    },
-  ])
+  const [personas, setPersonas] = useState<PersonaType[]>(defaultPersonas)
 
   const [editingPersona, setEditingPersona] = useState<PersonaType | null>(null)
   const [newPersona, setNewPersona] = useState<PersonaType>({...defaultPersona})
@@ -168,7 +108,7 @@ export default function PersonasScreen() {
         </TabsContent>
         
         <TabsContent value="standard" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {personas.slice(0, 4).map((persona) => (
               <PersonaCard
                 key={persona.id}
@@ -186,7 +126,7 @@ export default function PersonasScreen() {
         </TabsContent>
         
         <TabsContent value="custom" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {personas.slice(4).length > 0 ? (
               personas.slice(4).map((persona) => (
                 <PersonaCard

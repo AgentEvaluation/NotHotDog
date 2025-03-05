@@ -290,32 +290,32 @@ export class DbService {
           total_tests: metrics.total,
           passed_tests: metrics.passed,
           failed_tests: metrics.failed,
-          test_conversations: {
-            deleteMany: {},
-            create: chats.map(chat => {
-              // Ensure messages is an array
-              const messages = Array.isArray(chat.messages) ? chat.messages : [];
+          // test_conversations: {
+          //   deleteMany: {},
+          //   create: chats.map(chat => {
+          //     // Ensure messages is an array
+          //     const messages = Array.isArray(chat.messages) ? chat.messages : [];
               
-              return {
-                id: chat.id,
-                scenario_id: chat.scenario || '',
-                persona_id: chat.personaId || '',
-                status: chat.status || 'running',
-                error_message: chat.error || null,
-                conversation_messages: {
-                  create: messages.map(msg => ({
-                    id: msg.id || crypto.randomUUID(),
-                    role: msg.role || 'user',
-                    content: msg.content || '',
-                    is_correct: Boolean(msg.metrics?.validationScore === 1),
-                    response_time: msg.metrics?.responseTime || 0,
-                    validation_score: msg.metrics?.validationScore || 0,
-                    metrics: msg.metrics || {}
-                  }))
-                }
-              };
-            })
-          }
+          //     return {
+          //       id: chat.id,
+          //       scenario_id: chat.scenario || '',
+          //       persona_id: chat.personaId || '',
+          //       status: chat.status || 'running',
+          //       error_message: chat.error || null,
+          //       conversation_messages: {
+          //         create: messages.map(msg => ({
+          //           id: msg.id || crypto.randomUUID(),
+          //           role: msg.role || 'user',
+          //           content: msg.content || '',
+          //           is_correct: Boolean(msg.metrics?.validationScore === 1),
+          //           response_time: msg.metrics?.responseTime || 0,
+          //           validation_score: msg.metrics?.validationScore || 0,
+          //           metrics: msg.metrics || {}
+          //         }))
+          //       }
+          //     };
+          //   })
+          // }
         }
       });
     } catch (error) {
@@ -678,6 +678,73 @@ export class DbService {
     } catch(error){
       console.error("Database error in getOrganization:", error);
       throw new Error("Failed to fetch organization");
+    }
+  }
+
+  async addMessageToConversation(chatId: string, message: any) {
+    try {
+      if (!message || !chatId) {
+        console.warn("Invalid message or chatId:", { chatId, messageId: message?.id });
+        return null; // Return early instead of attempting to save
+      }
+
+      console.log("message type: " + typeof(message));
+      console.log("chatId: " + chatId);
+      console.log("message: " + JSON.stringify(message));
+  
+      const metrics = message.metrics ? { ...message.metrics } : {};
+
+      return await prisma.conversation_messages.create({
+        data: {
+          id: message.id,
+          conversation_id: chatId,
+          role: message.role,
+          content: message.content,
+          is_correct: message.metrics?.validationScore === 1 ? true : false,
+          response_time: message.metrics?.responseTime || 0,
+          validation_score: message.metrics?.validationScore || 0,
+          metrics: metrics
+        }
+      });
+    } catch (error) {
+      console.error("Database error in addMessageToConversation:", error);
+      throw new Error("Failed to add message to conversation");
+    }
+  }
+
+  async createTestConversation(runId: string, chat: any) {
+    try {
+      return await prisma.test_conversations.create({
+        data: {
+          id: chat.id,
+          run_id: runId, // This is the correct field name
+          scenario_id: chat.scenario || '',
+          persona_id: chat.personaId || '',
+          status: chat.status || 'running',
+          error_message: chat.error || null
+        }
+      });
+    } catch (error) {
+      console.error("Database error in createTestConversation:", error);
+      throw new Error("Failed to create test conversation");
+    }
+  }
+
+  async updateConversationStatus(chatId: string, status: string, errorMessage?: string) {
+    try {
+      const updateData: any = { status };
+      
+      if (errorMessage) {
+        updateData.error_message = errorMessage;
+      }
+
+      return await prisma.test_conversations.update({
+        where: { id: chatId },
+        data: updateData
+      });
+    } catch (error) {
+      console.error("Database error in updateConversationStatus:", error);
+      throw new Error("Failed to update conversation status");
     }
   }
 }

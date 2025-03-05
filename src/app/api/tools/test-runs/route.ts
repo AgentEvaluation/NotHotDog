@@ -157,6 +157,13 @@ export async function POST(request: Request) {
                 scenarioName: scenario.scenario,
                 personaId
               });
+
+              await dbService.createTestConversation(testRun.id, {
+                id: chatId,
+                scenario: scenario.id,
+                personaId: personaId,
+                status: 'running'
+              });
               
               // Create an agent with message callback
               const agent = new QaAgent({
@@ -182,6 +189,7 @@ export async function POST(request: Request) {
                   scenarioName: scenario.scenario,
                   personaId
                 });
+                await dbService.addMessageToConversation(message.chatId, message);
               });
 
               const result = await agent.runTest(
@@ -224,6 +232,8 @@ export async function POST(request: Request) {
                 chat,
                 testRunId: testRun.id
               });
+
+              await dbService.updateConversationStatus(chat.id, chat.status);
               
             } catch (error: any) {
               console.error('Error in test execution:', error);

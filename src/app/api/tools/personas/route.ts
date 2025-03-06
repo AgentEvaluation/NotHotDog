@@ -23,3 +23,85 @@ export async function GET() {
     return NextResponse.json({ error: "Failed to fetch personas" }, { status: 500 });
   }
 }
+
+export async function POST(request: Request) {
+  const { userId } = await auth();
+  
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const profile = await dbService.getProfileByClerkId(userId);
+    if (!profile || !profile.org_id) {
+      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    }
+
+    const personaData = await request.json();
+    
+    // Basic validation for required fields
+    if (!personaData.name || !personaData.temperature === undefined || 
+        !personaData.messageLength || !personaData.primaryIntent ||
+        !personaData.communicationStyle) {
+      return NextResponse.json({ error: "Missing required persona fields" }, { status: 400 });
+    }
+    
+    const newPersona = await dbService.createPersona({
+      ...personaData,
+      org_id: profile.org_id
+    });
+    
+    return NextResponse.json(newPersona, { status: 201 });
+  } catch (error) {
+    console.error("Error creating persona:", error);
+    return NextResponse.json({ error: "Failed to create persona" }, { status: 500 });
+  }
+}
+
+export async function PUT(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  const { userId } = await auth();
+  
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const personaData = await request.json();
+    
+    // Basic validation for required fields
+    if (!personaData.name || personaData.temperature === undefined || 
+        !personaData.messageLength || !personaData.primaryIntent ||
+        !personaData.communicationStyle) {
+      return NextResponse.json({ error: "Missing required persona fields" }, { status: 400 });
+    }
+    
+    const updatedPersona = await dbService.updatePersona(params.id, personaData);
+    
+    return NextResponse.json(updatedPersona);
+  } catch (error) {
+    console.error("Error updating persona:", error);
+    return NextResponse.json({ error: "Failed to update persona" }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  const { userId } = await auth();
+  
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    await dbService.deletePersona(params.id);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting persona:", error);
+    return NextResponse.json({ error: "Failed to delete persona" }, { status: 500 });
+  }
+}

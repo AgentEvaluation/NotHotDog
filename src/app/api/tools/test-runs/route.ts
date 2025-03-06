@@ -113,7 +113,6 @@ export async function POST(request: Request) {
     // Run the tests
     for (const scenario of scenarios) {
       for (const personaId of selectedPersonas) {
-        console.log(personaId);
         try {
           const agent = new QaAgent({
             headers: testConfig.headers,

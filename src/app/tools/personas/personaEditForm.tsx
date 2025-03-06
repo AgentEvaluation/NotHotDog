@@ -2,17 +2,16 @@ import { CardHeader, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { PersonaType } from "./types";
+import { Persona } from "@/types";
 
 interface PersonaEditFormProps {
-  persona: PersonaType;
-  setPersona: React.Dispatch<React.SetStateAction<PersonaType | null>>;
+  persona: Persona;
+  setPersona: React.Dispatch<React.SetStateAction<Persona | null>>;
 }
 
 export function PersonaEditForm({ persona, setPersona }: PersonaEditFormProps) {
-  const handleChange = (field: keyof PersonaType, value: any) => {
+  const handleChange = (field: keyof Persona, value: any) => {
     setPersona({ ...persona, [field]: value });
   };
 
@@ -179,7 +178,7 @@ export function PersonaEditForm({ persona, setPersona }: PersonaEditFormProps) {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center justify-between">
+          {/* <div className="flex items-center justify-between">
             <Label htmlFor={`memory-${persona.id}`}>History-based Memory</Label>
             <div className="flex items-center space-x-2">
               <Switch
@@ -191,7 +190,7 @@ export function PersonaEditForm({ persona, setPersona }: PersonaEditFormProps) {
                 {persona.historyBasedMemory ? "Yes" : "No"}
               </Label>
             </div>
-          </div>
+          </div> */}
         </div>
       </CardContent>
     </>

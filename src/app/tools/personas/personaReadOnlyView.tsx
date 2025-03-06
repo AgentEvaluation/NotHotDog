@@ -1,9 +1,9 @@
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { PersonaType } from "./types";
+import { Persona } from "@/types";
 
 interface PersonaReadOnlyViewProps {
-  persona: PersonaType;
+  persona: Persona;
 }
 
 export function PersonaReadOnlyView({ persona }: PersonaReadOnlyViewProps) {
@@ -49,10 +49,10 @@ export function PersonaReadOnlyView({ persona }: PersonaReadOnlyViewProps) {
           <Label className="text-xs text-muted-foreground">Slang Usage</Label>
           <p>{persona.slangUsage}</p>
         </div>
-        <div>
+        {/* <div>
           <Label className="text-xs text-muted-foreground">History-based Memory</Label>
           <p>{persona.historyBasedMemory ? "Yes" : "No"}</p>
-        </div>
+        </div> */}
       </div>
     </div>
   );

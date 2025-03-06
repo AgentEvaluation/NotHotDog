@@ -1,6 +1,5 @@
 import { TestRun } from '@/types/runs';
 import { ConversationContext, TestScenario } from '@/types';
-import { PersonaMapping, PersonaMappings } from '@/types/persona-mapping'
 
 const STORAGE_KEYS = {
   TEST_VARIATIONS: 'testVariations',

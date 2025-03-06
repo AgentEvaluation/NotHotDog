@@ -1,13 +1,12 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { PersonaType } from "./types";
+import { CommunicationStyle, DecisionSpeed, EmotionalState, ErrorTolerance, MessageLength, Persona, PrimaryIntent, SlangUsage, TechSavviness } from '@/types';
 
 interface PersonaDialogFormProps {
-  persona: PersonaType;
-  setPersona: React.Dispatch<React.SetStateAction<PersonaType>>;
+  persona: Persona;
+  setPersona: React.Dispatch<React.SetStateAction<Persona>>;
 }
 
 export function PersonaDialogForm({ persona, setPersona }: PersonaDialogFormProps) {
@@ -59,7 +58,7 @@ export function PersonaDialogForm({ persona, setPersona }: PersonaDialogFormProp
         </Label>
         <Select
           value={persona.messageLength}
-          onValueChange={(value) => setPersona({ ...persona, messageLength: value })}
+          onValueChange={(value) => setPersona({ ...persona, messageLength: value as MessageLength })}
         >
           <SelectTrigger className="col-span-2">
             <SelectValue placeholder="Select length" />
@@ -78,7 +77,7 @@ export function PersonaDialogForm({ persona, setPersona }: PersonaDialogFormProp
         </Label>
         <Select
           value={persona.primaryIntent}
-          onValueChange={(value) => setPersona({ ...persona, primaryIntent: value })}
+          onValueChange={(value) => setPersona({ ...persona, primaryIntent: value as PrimaryIntent })}
         >
           <SelectTrigger className="col-span-2">
             <SelectValue placeholder="Select intent" />
@@ -98,7 +97,7 @@ export function PersonaDialogForm({ persona, setPersona }: PersonaDialogFormProp
         </Label>
         <Select
           value={persona.communicationStyle}
-          onValueChange={(value) => setPersona({ ...persona, communicationStyle: value })}
+          onValueChange={(value) => setPersona({ ...persona, communicationStyle: value as CommunicationStyle })}
         >
           <SelectTrigger className="col-span-2">
             <SelectValue placeholder="Select style" />
@@ -119,7 +118,7 @@ export function PersonaDialogForm({ persona, setPersona }: PersonaDialogFormProp
         </Label>
         <Select
           value={persona.techSavviness}
-          onValueChange={(value) => setPersona({ ...persona, techSavviness: value })}
+          onValueChange={(value) => setPersona({ ...persona, techSavviness: value as TechSavviness })}
         >
           <SelectTrigger className="col-span-2">
             <SelectValue placeholder="Select level" />
@@ -138,7 +137,7 @@ export function PersonaDialogForm({ persona, setPersona }: PersonaDialogFormProp
         </Label>
         <Select
           value={persona.emotionalState}
-          onValueChange={(value) => setPersona({ ...persona, emotionalState: value })}
+          onValueChange={(value) => setPersona({ ...persona, emotionalState: value as EmotionalState })}
         >
           <SelectTrigger className="col-span-2">
             <SelectValue placeholder="Select state" />
@@ -158,7 +157,7 @@ export function PersonaDialogForm({ persona, setPersona }: PersonaDialogFormProp
         </Label>
         <Select
           value={persona.errorTolerance}
-          onValueChange={(value) => setPersona({ ...persona, errorTolerance: value })}
+          onValueChange={(value) => setPersona({ ...persona, errorTolerance: value as ErrorTolerance })}
         >
           <SelectTrigger className="col-span-2">
             <SelectValue placeholder="Select tolerance" />
@@ -177,7 +176,7 @@ export function PersonaDialogForm({ persona, setPersona }: PersonaDialogFormProp
         </Label>
         <Select
           value={persona.decisionSpeed}
-          onValueChange={(value) => setPersona({ ...persona, decisionSpeed: value })}
+          onValueChange={(value) => setPersona({ ...persona, decisionSpeed: value as DecisionSpeed })}
         >
           <SelectTrigger className="col-span-2">
             <SelectValue placeholder="Select speed" />
@@ -196,7 +195,7 @@ export function PersonaDialogForm({ persona, setPersona }: PersonaDialogFormProp
         </Label>
         <Select
           value={persona.slangUsage}
-          onValueChange={(value) => setPersona({ ...persona, slangUsage: value })}
+          onValueChange={(value) => setPersona({ ...persona, slangUsage: value as SlangUsage })}
         >
           <SelectTrigger className="col-span-2">
             <SelectValue placeholder="Select usage" />
@@ -209,7 +208,7 @@ export function PersonaDialogForm({ persona, setPersona }: PersonaDialogFormProp
         </Select>
       </div>
 
-      <div className="grid grid-cols-3 items-center gap-4">
+      {/* <div className="grid grid-cols-3 items-center gap-4">
         <Label htmlFor="historyBasedMemory" className="text-right w-40">
           History-based Memory
         </Label>
@@ -221,7 +220,7 @@ export function PersonaDialogForm({ persona, setPersona }: PersonaDialogFormProp
           />
           <Label htmlFor="historyBasedMemory">{persona.historyBasedMemory ? "Yes" : "No"}</Label>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

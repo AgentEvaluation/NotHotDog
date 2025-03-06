@@ -1,18 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { PersonaType } from "./types";
+import { Persona } from "@/types";
 import { PersonaReadOnlyView } from "./personaReadOnlyView";
 import { PersonaEditForm } from "./personaEditForm";
 import { Edit, Trash2, X, Check } from "lucide-react";
 
 interface PersonaCardProps {
-  persona: PersonaType;
-  editingPersona: PersonaType | null;
-  setEditingPersona: React.Dispatch<React.SetStateAction<PersonaType | null>>;
-  onEdit: (persona: PersonaType) => void;
+  persona: Persona;
+  editingPersona: Persona | null;
+  setEditingPersona: React.Dispatch<React.SetStateAction<Persona | null>>;
+  onEdit: (persona: Persona) => void;
   onSave: () => void;
   onCancel: () => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: string) => void;
   standardOnly?: boolean;
 }
 

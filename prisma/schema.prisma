@@ -138,11 +138,18 @@ model personas {
   name                   String
   description            String?
   system_prompt          String
-  min_conversation_turns Int?                     @default(1)
-  example_messages       Json?
   created_at             DateTime?                @default(now()) @db.Timestamptz(6)
   updated_at             DateTime?                @default(now()) @db.Timestamptz(6)
   is_default             Boolean                  @default(false)
+  temperature            Float                    @db.Real
+  message_length         String                   @default("")
+  primary_intent         String                   @default("")
+  communication_style    String                   @default("")
+  tech_savviness         String?
+  emotional_state        String?
+  error_tolerance        String?
+  decision_speed         String?
+  slang_usage            String?
   agent_persona_mappings agent_persona_mappings[]
   organizations          organizations            @relation(fields: [org_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   test_conversations     test_conversations[]

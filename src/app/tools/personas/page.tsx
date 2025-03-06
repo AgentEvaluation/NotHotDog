@@ -1,23 +1,67 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PersonaDialog } from "./personaDialog"
 import { PersonaCard } from "./personaCard"
 import { EmptyCustomPersonas } from "./emptyCustomPersonas"
-import { PersonaType, defaultPersona } from "./types"
-import { defaultPersonas } from "./defaultPersonas"
+import { Persona } from "@/types"
+import { v4 as uuidv4 } from 'uuid';
 
 export default function PersonasScreen() {
-  const [personas, setPersonas] = useState<PersonaType[]>(defaultPersonas)
+  const [personas, setPersonas] = useState<Persona[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const [editingPersona, setEditingPersona] = useState<PersonaType | null>(null)
-  const [newPersona, setNewPersona] = useState<PersonaType>({...defaultPersona})
+  const [editingPersona, setEditingPersona] = useState<Persona | null>(null)
   const [isNewPersonaDialogOpen, setIsNewPersonaDialogOpen] = useState(false)
+  const [newPersona, setNewPersona] = useState<Persona>({
+    id: "",
+    name: "",
+    description: "",
+    temperature: 0.7,
+    messageLength: "Medium",
+    primaryIntent: "Information-seeking",
+    communicationStyle: "Casual",
+    techSavviness: "Intermediate",
+    emotionalState: "Neutral",
+    errorTolerance: "Medium",
+    decisionSpeed: "Thoughtful",
+    slangUsage: "None",
+    historyBasedMemory: true,
+    systemPrompt: "",
+    isDefault: false,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  })
 
-  const handleEditPersona = (persona: PersonaType) => {
+  useEffect(() => {
+    const fetchPersonas = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch('/api/tools/personas')
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch personas')
+        }
+        
+        const data = await response.json()
+        setPersonas(data)
+      } catch (err) {
+        console.error('Error fetching personas:', err)
+        setError(err instanceof Error ? err.message : 'An error occurred')
+      } finally {
+        setLoading(false)
+      }
+    }
+  
+    fetchPersonas()
+  }, [])
+
+
+  const handleEditPersona = (persona: Persona) => {
     setEditingPersona({ ...persona })
   }
 
@@ -32,15 +76,72 @@ export default function PersonasScreen() {
     setEditingPersona(null)
   }
 
-  const handleCreatePersona = () => {
-    const newId = Math.max(...personas.map((p) => p.id)) + 1
-    setPersonas([...personas, { ...newPersona, id: newId }])
-    setNewPersona({...defaultPersona})
-    setIsNewPersonaDialogOpen(false)
+  const handleCreatePersona = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/tools/personas', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newPersona)
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to create persona')
+      }
+      
+      const createdPersona = await response.json()
+      setPersonas([...personas, createdPersona])
+      // Reset the newPersona state to initial values
+      setNewPersona({
+        id: uuidv4(),
+        name: "",
+        description: "",
+        // Include all other default values
+        temperature: 0.7,
+        messageLength: "Medium",
+        primaryIntent: "Information-seeking",
+        communicationStyle: "Casual",
+        techSavviness: "Intermediate",
+        emotionalState: "Neutral",
+        errorTolerance: "Medium",
+        decisionSpeed: "Thoughtful",
+        slangUsage: "None",
+        historyBasedMemory: true,
+        systemPrompt: "",
+        isDefault: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      setIsNewPersonaDialogOpen(false)
+    } catch (err) {
+      console.error('Error creating persona:', err)
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setLoading(false)
+    }
   }
-
-  const handleDeletePersona = (id: number) => {
-    setPersonas(personas.filter((p) => p.id !== id))
+  
+  // Update handleDeletePersona
+  const handleDeletePersona = async (id: string) => {
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/tools/personas/${id}`, {
+        method: 'DELETE'
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete persona')
+      }
+      
+      setPersonas(personas.filter(p => p.id !== id))
+    } catch (err) {
+      console.error('Error deleting persona:', err)
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -109,7 +210,7 @@ export default function PersonasScreen() {
         
         <TabsContent value="standard" className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {personas.filter(p => defaultPersonas.some(dp => dp.id === p.id)).map((persona) => (
+            {personas.filter(p => p.isDefault).map((persona) => (
               <PersonaCard
                 key={persona.id}
                 persona={persona}
@@ -128,8 +229,7 @@ export default function PersonasScreen() {
         <TabsContent value="custom" className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {personas.slice(4).length > 0 ? (
-              personas.filter(p => !defaultPersonas.some(dp => dp.id === p.id))
-              .map((persona) => (
+              personas.filter(p => p.isDefault).map((persona) => (
                 <PersonaCard
                   key={persona.id}
                   persona={persona}
@@ -150,3 +250,5 @@ export default function PersonasScreen() {
     </div>
   )
 }
+
+

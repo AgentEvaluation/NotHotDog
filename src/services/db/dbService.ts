@@ -421,12 +421,11 @@ export class DbService {
       const personas = await prisma.personas.findMany({
         where: {
           OR: [
-            // { org_id: profile.org_id },
+            { org_id: profile.org_id },
             { is_default: true }
           ]
         }
       });
-      
       return personas;
     } catch (error) {
       console.error("Database error in getPersonas:", error);

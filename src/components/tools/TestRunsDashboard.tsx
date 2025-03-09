@@ -102,23 +102,6 @@ export function TestRunsDashboard() {
                     <div className="bg-emerald-500/10 rounded-[var(--radius)]">
                       <CollapsibleJson content={message.content} />
                     </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge
-                        variant={message.isCorrect ? "outline" : "destructive"}
-                        className={
-                          message.isCorrect
-                            ? "bg-green-500/10"
-                            : "bg-red-500/10"
-                        }
-                      >
-                        {message.isCorrect ? "Correct" : "Incorrect"}
-                      </Badge>
-                      {message.explanation && (
-                        <span className="text-xs text-zinc-400">
-                          {message.explanation}
-                        </span>
-                      )}
-                    </div>
                   </div>
                   <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
                     <span className="text-sm">🤖</span>

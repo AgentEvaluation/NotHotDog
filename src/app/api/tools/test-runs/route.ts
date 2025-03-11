@@ -3,8 +3,7 @@ import { dbService } from '@/services/db';
 import { auth } from '@clerk/nextjs/server';
 import { v4 as uuidv4 } from 'uuid';
 import { QaAgent } from '@/services/agents/claude/qaAgent';
-import { AnthropicModel } from '@/services/llm/enums';
-import { TestRun, TestMessage } from '@/types/runs';
+import { TestRun } from '@/types/runs';
 import { TestChat } from '@/types/chat';
 import { Rule } from '@/services/agents/claude/types';
 
@@ -169,10 +168,11 @@ export async function POST(request: Request) {
           
 
           completedChats.push(chat);
-          testRun.metrics.passed += result.validation.passedTest ? 1 : 0;
-          testRun.metrics.failed += result.validation.passedTest ? 0 : 1;
-          testRun.metrics.correct += result.validation.passedTest ? 1 : 0;
-          testRun.metrics.incorrect += result.validation.passedTest ? 0 : 1;
+          testRun.metrics.passed += conversationValidation.isCorrect ? 1 : 0;
+          testRun.metrics.failed += conversationValidation.isCorrect ? 0 : 1;
+          testRun.metrics.correct += conversationValidation.isCorrect ? 1 : 0;
+          testRun.metrics.incorrect += conversationValidation.isCorrect ? 0 : 1;
+          
           
         } catch (error: any) { // Type error as any
           console.error('Error in test execution:', error);

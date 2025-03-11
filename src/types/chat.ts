@@ -26,23 +26,23 @@ export interface ChatMessage {
   };
 }
 
-export interface TestResult {
-  conversation: {
-    chatId: string;
-    messages: ChatMessage[];
-    rawInput: Record<string, any>;
-    rawOutput: Record<string, any>;
-    chatResponse: string;
-  };
-  validation: {
-    passedTest: boolean;
-    formatValid: boolean;
-    conditionMet: boolean;
-    metrics: {
-      responseTime: number;
-    };
-  };
-}
+// export interface TestResult {
+//   conversation: {
+//     chatId: string;
+//     messages: ChatMessage[];
+//     rawInput: Record<string, any>;
+//     rawOutput: Record<string, any>;
+//     chatResponse: string;
+//   };
+//   validation: {
+//     passedTest: boolean;
+//     formatValid: boolean;
+//     conditionMet: boolean;
+//     metrics: {
+//       responseTime: number;
+//     };
+//   };
+// }
 
 export interface TestChat {
   id: string;

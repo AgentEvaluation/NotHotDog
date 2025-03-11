@@ -150,6 +150,21 @@ export function TestRunsDashboard() {
                 </p>
               </div>
 
+              <div className="w-[40%] flex items-center justify-end gap-4">
+                <Badge
+                  variant={
+                    chat.status === "passed" 
+                      ? "outline" 
+                      : chat.status === "failed" 
+                      ? "destructive" 
+                      : "secondary"
+                  }
+                >
+                  {chat.status}
+                </Badge>
+                <span className="text-zinc-400">→</span>
+              </div>
+
               <div className="w-[40%] flex items-center justify-end">
                 <span className="text-zinc-400">→</span>
               </div>

@@ -182,6 +182,8 @@ model test_conversations {
   status                String
   error_message         String?
   created_at            DateTime?               @default(now()) @db.Timestamptz(6)
+  validation_reason     String?
+  is_correct            Boolean?
   conversation_messages conversation_messages[]
   personas              personas                @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   test_runs             test_runs               @relation(fields: [run_id], references: [id], onDelete: NoAction, onUpdate: NoAction)

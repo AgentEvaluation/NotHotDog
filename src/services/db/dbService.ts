@@ -651,6 +651,8 @@ export class DbService {
           test_conversations: {
             include: {
               conversation_messages: true,
+              test_scenarios: true,
+              personas: true, 
             },
           },
         },
@@ -675,7 +677,9 @@ export class DbService {
           const conversation = tc as ExtendedTestConversation;
           return {
             id: conversation.id,
-            name: conversation.scenario_id,
+            name: `${tc.test_scenarios?.name || ""} - ${tc.personas?.name || ""}`,
+            scenarioName: tc.test_scenarios?.name,
+            personaName: tc.personas?.name,
             scenario: conversation.scenario_id,
             status: conversation.status as 'running' | 'passed' | 'failed',
             messages: conversation.conversation_messages.map(msg => ({

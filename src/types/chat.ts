@@ -48,6 +48,8 @@ export interface TestChat {
   id: string;
   name: string;
   scenario: string;
+  scenarioName: string,
+  personaName: string,
   status: 'running' | 'passed' | 'failed';
   messages: TestMessage[];
   metrics: {

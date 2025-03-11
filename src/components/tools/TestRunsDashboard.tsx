@@ -144,7 +144,12 @@ export function TestRunsDashboard() {
               onClick={() => setSelectedChat(chat)}
             >
               <div className="w-[60%] truncate">
-                <h3 className="font-medium truncate">{chat.name}</h3>
+                <div className="font-medium">
+                  {chat.scenarioName ?? "Unknown Scenario"}
+                </div>
+                <div className="text-sm text-zinc-400">
+                  {chat.personaName ?? "Unknown Persona"}
+                </div>
                 <p className="text-sm text-zinc-400">
                   {chat.messages.length} messages
                 </p>

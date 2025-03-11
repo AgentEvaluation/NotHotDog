@@ -184,10 +184,13 @@ model test_conversations {
   created_at            DateTime?               @default(now()) @db.Timestamptz(6)
   validation_reason     String?
   is_correct            Boolean?
+  scenario_name    String?
+  persona_name     String?
   conversation_messages conversation_messages[]
   personas              personas                @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   test_runs             test_runs               @relation(fields: [run_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   test_scenarios        test_scenarios          @relation(fields: [scenario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
 
   @@index([run_id], map: "idx_test_conversations_run")
   @@index([status], map: "idx_test_conversations_status")

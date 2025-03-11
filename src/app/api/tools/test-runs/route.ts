@@ -145,6 +145,8 @@ export async function POST(request: Request) {
           
           const chat: TestChat = {
             id: chatId,
+            scenarioName: scenario.scenario,
+            personaName: personaId,
             name: scenario.scenario,
             scenario: scenario.id,
             status: conversationValidation.isCorrect ? 'passed' : 'failed',
@@ -178,6 +180,8 @@ export async function POST(request: Request) {
           console.error('Error in test execution:', error);
           const chat: TestChat = {
             id: uuidv4(),
+            scenarioName: scenario.scenario,
+            personaName: personaId,
             name: scenario.scenario,
             scenario: scenario.id,
             status: 'failed',

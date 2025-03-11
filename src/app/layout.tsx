@@ -27,7 +27,7 @@ export default function RootLayout({
               <div>
                 <h1 className="text-xl font-bold text-orange-500">NotHotDog</h1>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mt-1">
-                  Agent Evaluation Framework
+                  Agent Testing Framework
                 </p>
               </div>
 

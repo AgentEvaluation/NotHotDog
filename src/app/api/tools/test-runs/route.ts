@@ -136,27 +136,37 @@ export async function POST(request: Request) {
 
           const chatId = uuidv4();
           
+          const conversationValidation = await agent.validateFullConversation(
+            result.conversation.allMessages
+              .map(m => `${m.role === 'user' ? 'Human' : 'Assistant'}: ${m.content}`)
+              .join('\n\n'),
+            scenario.scenario,
+            scenario.expectedOutput || ''
+          );
+          
           const chat: TestChat = {
             id: chatId,
             name: scenario.scenario,
             scenario: scenario.id,
-            status: 'passed',
+            status: conversationValidation.isCorrect ? 'passed' : 'failed',
             messages: result.conversation.allMessages,
             metrics: {
-              correct: result.validation.passedTest ? 1 : 0,
-              incorrect: result.validation.passedTest ? 0 : 1,
+              correct: conversationValidation.isCorrect ? 1 : 0,
+              incorrect: conversationValidation.isCorrect ? 0 : 1,
               responseTime: [result.validation.metrics.responseTime],
-              validationScores: [result.validation.passedTest ? 1 : 0],
+              validationScores: [conversationValidation.isCorrect ? 1 : 0],
               contextRelevance: [1],
               validationDetails: {
-                customFailure: !result.validation.passedTest,
+                customFailure: !conversationValidation.isCorrect,
                 containsFailures: [],
                 notContainsFailures: []
               }
             },
             timestamp: new Date().toISOString(),
-            personaId: personaId
+            personaId: personaId,
+            validationResult: conversationValidation
           };
+          
 
           completedChats.push(chat);
           testRun.metrics.passed += result.validation.passedTest ? 1 : 0;

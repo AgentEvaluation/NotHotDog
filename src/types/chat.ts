@@ -65,7 +65,15 @@ export interface TestChat {
   error?: string | null;
   timestamp: string;
   personaId: string;
+  validationResult?: ValidationResult;
 }
+
+
+export interface ValidationResult {
+  isCorrect: boolean;
+  explanation: string;
+}
+
 
 
 // export interface TestChat {

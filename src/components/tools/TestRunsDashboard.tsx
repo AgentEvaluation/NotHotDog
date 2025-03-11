@@ -13,6 +13,8 @@ import {
 import { Play, ChevronDown } from "lucide-react";
 import { useTestExecution } from "@/hooks/useTestExecution";
 import WarningDialog from "@/components/config/WarningDialog";
+import { ConversationValidationDisplay } from "./ConversationValidationDisplay";
+
 
 function CollapsibleJson({ content }: { content: string }) {
   let formattedContent = content;
@@ -65,14 +67,6 @@ export function TestRunsDashboard() {
           <Button variant="ghost" onClick={() => setSelectedChat(null)}>
             ← Back to Run
           </Button>
-          <div className="flex items-center gap-2">
-            <span className="text-green-500">
-              {selectedChat.metrics.correct} Correct
-            </span>
-            <span className="text-red-500">
-              {selectedChat.metrics.incorrect} Incorrect
-            </span>
-          </div>
         </div>
 
         <div>
@@ -110,6 +104,10 @@ export function TestRunsDashboard() {
               )}
             </div>
           ))}
+          {selectedChat.validationResult && (
+            <ConversationValidationDisplay validationResult={selectedChat.validationResult} />
+          )}
+
         </div>
       </div>
     );

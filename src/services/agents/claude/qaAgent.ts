@@ -134,9 +134,8 @@ export class QaAgent {
       const formatValid = ResponseValidator.validateResponseFormat(apiResponse, this.config.apiConfig.outputFormat);
       const conditionMet = ResponseValidator.validateCondition(apiResponse, this.config.apiConfig.rules);
 
-      const fullConversation = allMessages
-        .map(m => `${m.role === 'user' ? 'Human' : 'Assistant'}: ${m.content}`)
-        .join('\n\n');
+      const memoryVariables = await this.memory.loadMemoryVariables({});
+      const fullConversation = memoryVariables.chat_history;
 
       const conversationValidation = await this.validateFullConversation(
         fullConversation,
@@ -248,34 +247,40 @@ export class QaAgent {
 
     return { messages, finalResponse: currentResponse, totalResponseTime };
   }
-
-  /**
-   * Validate the complete conversation to ensure it meets the test scenario.
-   * The prompt is sent to the model for evaluation and returns a JSON result.
-   */
-  private async validateFullConversation(
+  
+  public async validateFullConversation(
     fullConversation: string,
     scenario: string,
     expectedOutput: string
   ) {
-    const promptText = `Evaluate if this complete conversation fulfills the test scenario:
+    // Provide a strict instruction:
+    const promptText = `You are a strict evaluator. Return ONLY valid JSON. No extra text, no explanations outside the JSON.
+  
   Test Scenario: ${scenario}
-  Expected Behavior: ${expectedOutput}
+  Expected Output: ${expectedOutput}
   Complete Conversation:
   ${fullConversation}
-  Evaluate if the conversation achieved the expected behavior. Consider the entire context.
-  Return JSON: { "isCorrect": boolean, "explanation": "why" }`;
+  
+  Return JSON in this EXACT format:
+  {"isCorrect": true or false, "explanation": "Your reason in a single string"}
+  Do NOT include any text outside the braces. Do NOT include code fences.`;
   
     const result = await this.model.invoke([{ role: 'user', content: promptText }]);
   
+    const content = typeof result.content === 'string'
+      ? result.content
+      : JSON.stringify(result.content);
+  
+    // Parse or fail gracefully
     try {
-      const content = typeof result.content === 'string'
-        ? result.content
-        : JSON.stringify(result.content);
       return JSON.parse(content);
     } catch (error) {
-      console.error('Failed to parse validation result:', error);
-      return { isCorrect: false, explanation: 'Validation failed' };
+      console.error("Model did not return valid JSON:", error);
+      return {
+        isCorrect: false,
+        explanation: "Model returned invalid JSON. Prompt the user again or provide fallback."
+      };
     }
   }
+  
 }

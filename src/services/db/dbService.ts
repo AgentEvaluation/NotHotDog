@@ -3,6 +3,7 @@ import { TestRun } from '@/types/runs';
 import { SimplifiedTestCases, TestVariation } from '@/types/variations';
 import { CommunicationStyle, DecisionSpeed, Persona, PersonaMappings, SlangUsage, MessageLength, PrimaryIntent, TechSavviness, EmotionalState, ErrorTolerance } from '@/types';
 import { Rule } from '../agents/claude/types';
+import { ExtendedTestConversation } from "@/types/extendedTestConversation";
 
 export class DbService {
   private static instance: DbService;
@@ -610,6 +611,8 @@ export class DbService {
               persona_id: chat.personaId || "",
               status: chat.status,
               error_message: chat.error || null,
+              validation_reason: chat.validationResult ? chat.validationResult.explanation : null,
+              is_correct: chat.validationResult ? chat.validationResult.isCorrect : undefined,
               conversation_messages: {
                 create: chat.messages.map(msg => ({
                   id: msg.id,
@@ -668,34 +671,41 @@ export class DbService {
           incorrect: 0,
           sentimentScores: { positive: 0, neutral: 0, negative: 0 }
         },
-        chats: run.test_conversations.map(tc => ({
-          id: tc.id,
-          name: tc.scenario_id,
-          scenario: tc.scenario_id,
-          status: 'running',
-          messages: tc.conversation_messages.map(msg => ({
-            id: msg.id,
-            chatId: msg.conversation_id,
-            role: msg.role as "user" | "assistant",
-            content: msg.content,
-            expectedOutput: undefined,
-            isCorrect: msg.is_correct ?? false,
-            explanation: undefined,
+        chats: run.test_conversations.map(tc => {
+          const conversation = tc as ExtendedTestConversation;
+          return {
+            id: conversation.id,
+            name: conversation.scenario_id,
+            scenario: conversation.scenario_id,
+            status: conversation.status as 'running' | 'passed' | 'failed',
+            messages: conversation.conversation_messages.map(msg => ({
+              id: msg.id,
+              chatId: msg.conversation_id,
+              role: msg.role as "user" | "assistant",
+              content: msg.content,
+              expectedOutput: undefined,
+              isCorrect: msg.is_correct ?? false,
+              explanation: undefined,
+              metrics: {
+                responseTime: msg.response_time ?? 0,
+                validationScore: msg.validation_score ?? 0
+              }
+            })),
             metrics: {
-              responseTime: msg.response_time ?? 0,
-              validationScore: msg.validation_score ?? 0
+              correct: 0,
+              incorrect: 0,
+              responseTime: [],
+              validationScores: [],
+              contextRelevance: []
+            },
+            timestamp: conversation.created_at ? conversation.created_at.toISOString() : new Date().toISOString(),
+            personaId: "",
+            validationResult: {
+              isCorrect: conversation.is_correct ?? false,
+              explanation: conversation.validation_reason ?? ""
             }
-          })),
-          metrics: {
-            correct: 0,
-            incorrect: 0,
-            responseTime: [],
-            validationScores: [],
-            contextRelevance: []
-          },
-          timestamp: tc.created_at ? tc.created_at.toISOString() : new Date().toISOString(),
-          personaId: ""
-        })),
+          };
+        }),     
         results: [],
         agentId: run.agent_id,
         createdBy: run.created_by,

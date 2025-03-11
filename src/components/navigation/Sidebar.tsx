@@ -6,11 +6,8 @@ import {
   BookOpen,
   Users,
   PlayCircle,
-  Moon,
   ChartBarStacked,
-  Sun,
 } from 'lucide-react'
-import { useTheme } from "next-themes"
 
 export default function Sidebar() {
   const pathname = usePathname()
@@ -46,26 +43,6 @@ export default function Sidebar() {
   
   return (
     <div className="w-64 border-r border-border bg-card shadow-sm h-screen flex flex-col">
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-          <h1 className="text-xl font-bold text-orange-500">
-            NotHotDog
-          </h1>
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mt-1">Agent Testing Framework</p>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-            className="h-8 w-8 rounded-full"
-          >
-            <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          </Button>
-        </div>
-      </div>
-      
       <div className="flex-1 py-2 px-3">
         <nav className="space-y-1">
           {navItems.map((item) => (

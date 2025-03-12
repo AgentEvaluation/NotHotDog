@@ -49,7 +49,7 @@ export default function ToolsPage() {
   return (
     <div className="relative min-h-screen p-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">Configue Agent</h2>
+        <h2 className="text-xl font-semibold">Configure Agent</h2>
         <div className="flex gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

@@ -3,8 +3,7 @@ import { dbService } from '@/services/db';
 import { auth } from '@clerk/nextjs/server';
 import { v4 as uuidv4 } from 'uuid';
 import { QaAgent } from '@/services/agents/claude/qaAgent';
-import { AnthropicModel } from '@/services/llm/enums';
-import { TestRun, TestMessage } from '@/types/runs';
+import { TestRun } from '@/types/runs';
 import { TestChat } from '@/types/chat';
 import { Rule } from '@/services/agents/claude/types';
 
@@ -136,38 +135,53 @@ export async function POST(request: Request) {
 
           const chatId = uuidv4();
           
+          const conversationValidation = await agent.validateFullConversation(
+            result.conversation.allMessages
+              .map(m => `${m.role === 'user' ? 'Human' : 'Assistant'}: ${m.content}`)
+              .join('\n\n'),
+            scenario.scenario,
+            scenario.expectedOutput || ''
+          );
+          
           const chat: TestChat = {
             id: chatId,
+            scenarioName: scenario.scenario,
+            personaName: personaId,
             name: scenario.scenario,
             scenario: scenario.id,
-            status: 'passed',
+            status: conversationValidation.isCorrect ? 'passed' : 'failed',
             messages: result.conversation.allMessages,
             metrics: {
-              correct: result.validation.passedTest ? 1 : 0,
-              incorrect: result.validation.passedTest ? 0 : 1,
+              correct: conversationValidation.isCorrect ? 1 : 0,
+              incorrect: conversationValidation.isCorrect ? 0 : 1,
               responseTime: [result.validation.metrics.responseTime],
-              validationScores: [result.validation.passedTest ? 1 : 0],
+              validationScores: [conversationValidation.isCorrect ? 1 : 0],
               contextRelevance: [1],
               validationDetails: {
-                customFailure: !result.validation.passedTest,
+                customFailure: !conversationValidation.isCorrect,
                 containsFailures: [],
                 notContainsFailures: []
               }
             },
             timestamp: new Date().toISOString(),
-            personaId: personaId
+            personaId: personaId,
+            validationResult: conversationValidation
           };
+          
 
           completedChats.push(chat);
-          testRun.metrics.passed += result.validation.passedTest ? 1 : 0;
-          testRun.metrics.failed += result.validation.passedTest ? 0 : 1;
-          testRun.metrics.correct += result.validation.passedTest ? 1 : 0;
-          testRun.metrics.incorrect += result.validation.passedTest ? 0 : 1;
+          testRun.metrics.passed += conversationValidation.isCorrect ? 1 : 0;
+          testRun.metrics.failed += conversationValidation.isCorrect ? 0 : 1;
+          testRun.metrics.correct += conversationValidation.isCorrect ? 1 : 0;
+          testRun.metrics.incorrect += conversationValidation.isCorrect ? 0 : 1;
+          
           
         } catch (error: any) { // Type error as any
           console.error('Error in test execution:', error);
           const chat: TestChat = {
             id: uuidv4(),
+            scenarioName: scenario.scenario,
+            personaName: personaId,
             name: scenario.scenario,
             scenario: scenario.id,
             status: 'failed',

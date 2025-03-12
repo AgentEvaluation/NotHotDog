@@ -26,28 +26,30 @@ export interface ChatMessage {
   };
 }
 
-export interface TestResult {
-  conversation: {
-    chatId: string;
-    messages: ChatMessage[];
-    rawInput: Record<string, any>;
-    rawOutput: Record<string, any>;
-    chatResponse: string;
-  };
-  validation: {
-    passedTest: boolean;
-    formatValid: boolean;
-    conditionMet: boolean;
-    metrics: {
-      responseTime: number;
-    };
-  };
-}
+// export interface TestResult {
+//   conversation: {
+//     chatId: string;
+//     messages: ChatMessage[];
+//     rawInput: Record<string, any>;
+//     rawOutput: Record<string, any>;
+//     chatResponse: string;
+//   };
+//   validation: {
+//     passedTest: boolean;
+//     formatValid: boolean;
+//     conditionMet: boolean;
+//     metrics: {
+//       responseTime: number;
+//     };
+//   };
+// }
 
 export interface TestChat {
   id: string;
   name: string;
   scenario: string;
+  scenarioName: string,
+  personaName: string,
   status: 'running' | 'passed' | 'failed';
   messages: TestMessage[];
   metrics: {
@@ -65,7 +67,15 @@ export interface TestChat {
   error?: string | null;
   timestamp: string;
   personaId: string;
+  validationResult?: ValidationResult;
 }
+
+
+export interface ValidationResult {
+  isCorrect: boolean;
+  explanation: string;
+}
+
 
 
 // export interface TestChat {

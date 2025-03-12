@@ -13,6 +13,8 @@ import {
 import { Play, ChevronDown } from "lucide-react";
 import { useTestExecution } from "@/hooks/useTestExecution";
 import WarningDialog from "@/components/config/WarningDialog";
+import { ConversationValidationDisplay } from "./ConversationValidationDisplay";
+
 
 function CollapsibleJson({ content }: { content: string }) {
   let formattedContent = content;
@@ -65,14 +67,6 @@ export function TestRunsDashboard() {
           <Button variant="ghost" onClick={() => setSelectedChat(null)}>
             ← Back to Run
           </Button>
-          <div className="flex items-center gap-2">
-            <span className="text-green-500">
-              {selectedChat.metrics.correct} Correct
-            </span>
-            <span className="text-red-500">
-              {selectedChat.metrics.incorrect} Incorrect
-            </span>
-          </div>
         </div>
 
         <div>
@@ -102,23 +96,6 @@ export function TestRunsDashboard() {
                     <div className="bg-emerald-500/10 rounded-[var(--radius)]">
                       <CollapsibleJson content={message.content} />
                     </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge
-                        variant={message.isCorrect ? "outline" : "destructive"}
-                        className={
-                          message.isCorrect
-                            ? "bg-green-500/10"
-                            : "bg-red-500/10"
-                        }
-                      >
-                        {message.isCorrect ? "Correct" : "Incorrect"}
-                      </Badge>
-                      {message.explanation && (
-                        <span className="text-xs text-zinc-400">
-                          {message.explanation}
-                        </span>
-                      )}
-                    </div>
                   </div>
                   <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
                     <span className="text-sm">🤖</span>
@@ -127,6 +104,10 @@ export function TestRunsDashboard() {
               )}
             </div>
           ))}
+          {selectedChat.validationResult && (
+            <ConversationValidationDisplay validationResult={selectedChat.validationResult} />
+          )}
+
         </div>
       </div>
     );
@@ -163,10 +144,30 @@ export function TestRunsDashboard() {
               onClick={() => setSelectedChat(chat)}
             >
               <div className="w-[60%] truncate">
-                <h3 className="font-medium truncate">{chat.name}</h3>
+                <div className="font-medium">
+                  {chat.scenarioName ?? "Unknown Scenario"}
+                </div>
+                <div className="text-sm text-zinc-400">
+                  {chat.personaName ?? "Unknown Persona"}
+                </div>
                 <p className="text-sm text-zinc-400">
                   {chat.messages.length} messages
                 </p>
+              </div>
+
+              <div className="w-[40%] flex items-center justify-end gap-4">
+                <Badge
+                  variant={
+                    chat.status === "passed" 
+                      ? "outline" 
+                      : chat.status === "failed" 
+                      ? "destructive" 
+                      : "secondary"
+                  }
+                >
+                  {chat.status}
+                </Badge>
+                <span className="text-zinc-400">→</span>
               </div>
 
               <div className="w-[40%] flex items-center justify-end">

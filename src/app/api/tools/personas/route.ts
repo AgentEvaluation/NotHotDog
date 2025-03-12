@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { dbService } from "@/services/db/dbService";
 import { auth } from "@clerk/nextjs/server";
+import { mapToUIPersona } from "@/lib/utils";
 
 export async function GET() {
   const { userId } = await auth();
@@ -13,7 +14,9 @@ export async function GET() {
   }
   
   try {
-    const personas = await dbService.getPersonas(userId);
+    const dbPersonas = await dbService.getPersonas(userId);
+    const personas = dbPersonas.map(mapToUIPersona);
+
     return new NextResponse(
       JSON.stringify(personas),
       { status: 200, headers: { "Content-Type": "application/json" } }

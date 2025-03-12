@@ -25,7 +25,7 @@ interface ApiKeyConfigProps {
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-export default function ApiKeyConfig({ isOpen, setIsOpen }: ApiKeyConfigProps) {
+export default function ApiKeyConfig() {
   const [keyName, setKeyName] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [selectedModel, setSelectedModel] = useState(AnthropicModel.Sonnet3_5);

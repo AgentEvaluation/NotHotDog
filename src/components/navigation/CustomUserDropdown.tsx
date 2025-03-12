@@ -35,8 +35,8 @@ export default function CustomUserDropdown() {
 
       {/* API Key Config Modal */}
       <ApiKeyConfig
-        isOpen={isApiKeyModalOpen}
-        setIsOpen={setIsApiKeyModalOpen}
+        // isOpen={isApiKeyModalOpen}
+        // setIsOpen={setIsApiKeyModalOpen}
       />
     </>
   );

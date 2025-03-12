@@ -8,6 +8,7 @@ import {
   PlayCircle,
   ChartBarStacked,
 } from 'lucide-react'
+import { useTheme } from 'next-themes'
 
 export default function Sidebar() {
   const pathname = usePathname()

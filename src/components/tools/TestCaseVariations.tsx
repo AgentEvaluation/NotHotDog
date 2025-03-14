@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import WarningDialog from "@/components/config/WarningDialog";
@@ -200,49 +200,62 @@ export function TestCaseVariations({
 
   const showBulkActions = generatedCases.length > 1 && selectedIds.length > 0;
 
-  // if (!isMounted) {
-  //   return null;
-  // }
-
   return (
-    <Card className="bg-background border-border border max-h-screen overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900">
-      <CardHeader>
-        <div className="flex justify-between items-center">
+      <Card className="bg-card text-card-foreground border border-border h-screen overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-semibold">Test Case Variations</CardTitle>
+        </CardHeader>
+
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           {loading && (
             <div className="fixed inset-0 flex items-center justify-center bg-background bg-opacity-50 z-50">
               <Loading size="lg" message="Generating test cases..." />
             </div>
           )}
 
-          {selectedTestId &&
-            (generatedCases.length > 0 ? (
-              <Button size="sm" onClick={addNewTestCase}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Test Case
-              </Button>
-            ) : (
-              <Button size="sm" onClick={generateTestCases} disabled={loading}>
-                <Plus className="h-4 w-4 mr-2" />
-                Generate Scenarios
-              </Button>
-            ))}
-        </div>
+          {/* Left group: Add / Generate */}
+          <div className="flex gap-2">
+          {selectedTestId && (generatedCases.length > 0 ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-3"
+              onClick={addNewTestCase}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Test Case
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              onClick={generateTestCases}
+              disabled={loading}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Generate Scenarios
+            </Button>
+          ))}
+          </div>
 
-        <div className="flex gap-2 mt-2">
-          <Button size="sm" onClick={selectAllCases}>
-            {selectedIds.length === generatedCases.length
-              ? "Deselect All"
-              : "Select All"}
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => deleteTestCases(selectedIds)}
-            variant="destructive"
-          >
-            Delete Selected
-          </Button>
-        </div>
-      </CardHeader>
+          {/* Right group: Select All / Delete Selected */}
+          <div className="flex gap-2">
+            <Button size="sm" onClick={selectAllCases}>
+              {selectedIds.length === generatedCases.length
+                ? "Deselect All"
+                : "Select All"}
+            </Button>
+            {selectedIds.length > 0 && (
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => deleteTestCases(selectedIds)}
+              >
+                Delete Selected
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+
 
       <CardContent className="space-y-4">
         {generatedCases.map((testCase) => (
@@ -255,10 +268,10 @@ export function TestCaseVariations({
                 className="mr-2"
               />
               {editingId === testCase.id ? (
-                <Card className="bg-background border-border border p-4 flex-1">
+                <Card className="bg-card text-card-foreground border border-border p-4 flex-1 rounded-md shadow-sm">
                   <CardContent className="pt-4 space-y-4 flex-1">
                     <div>
-                      <label className="text-sm text-zinc-400">
+                      <label className="text-xs font-medium text-muted-foreground">
                         Test Scenario
                       </label>
                       <Textarea
@@ -270,11 +283,11 @@ export function TestCaseVariations({
                           }))
                         }
                         placeholder="Describe the test scenario in plain English..."
-                        className="mt-1 w-full h-24 overflow-y-auto"
-                      />
+                        className="mt-1 w-full resize-y rounded-md border border-input bg-card text-foreground px-2 py-1 text-sm"
+                        />
                     </div>
                     <div>
-                      <label className="text-sm text-zinc-400">
+                      <label className="text-xs font-medium text-muted-foreground">
                         Expected Output
                       </label>
                       <Textarea
@@ -308,23 +321,23 @@ export function TestCaseVariations({
                   </CardContent>
                 </Card>
               ) : (
-                <Card className="border border-border bg-background">
+                <Card className="bg-card text-card-foreground border border-border rounded-md shadow-sm">
                   <CardContent className="pt-4">
                     <div className="flex justify-between items-start">
                       <div className="flex-1 space-y-4">
                         <div>
-                          <h4 className="text-sm font-medium text-zinc-400">
+                          <h4 className="text-sm font-medium text-muted-foreground">
                             Test Scenario
                           </h4>
-                          <p className="text-sm mt-1 text-white">
+                          <p className="text-sm mt-1 text-foreground">
                             {testCase.scenario}
                           </p>
                         </div>
                         <div>
-                          <h4 className="text-sm font-medium text-zinc-400">
+                          <h4 className="text-sm font-medium text-muted-foreground">
                             Expected Output
                           </h4>
-                          <p className="text-sm mt-1 text-zinc-300">
+                          <p className="text-sm mt-1 text-muted-foreground">
                             {testCase.expectedOutput}
                           </p>
                         </div>
@@ -354,7 +367,7 @@ export function TestCaseVariations({
         ))}
 
         {!selectedTestId && (
-          <div className="text-center py-8 text-zinc-500">
+          <div className="text-center py-8 text-muted-foreground">
             Select an agent case to generate variations.
           </div>
         )}

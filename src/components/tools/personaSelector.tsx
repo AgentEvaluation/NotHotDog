@@ -62,7 +62,7 @@ export default function PersonaSelector({ selectedTest }: PersonaSelectorProps) 
   };
 
   return (
-    <Card className="bg-background border-border border h-full">
+    <Card className="bg-card text-card-foreground border border-border h-full">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg font-semibold">Select Testing Personas</CardTitle>
       </CardHeader>
@@ -71,28 +71,32 @@ export default function PersonaSelector({ selectedTest }: PersonaSelectorProps) 
           {personas.map((persona) => (
             <div key={persona.id} className="w-full">
               <Button
-                variant={selectedPersonas.includes(persona.id) ? "default" : "outline"}
+                variant="outline"
                 className={cn(
-                  "relative w-full h-auto p-4 flex flex-col items-start justify-start",
-                  "text-left whitespace-normal break-words min-h-[80px]",
+                  "relative w-full h-auto p-3 flex flex-col items-start justify-start rounded-md transition-colors",
+                  "text-left whitespace-normal break-words min-h-[70px]",
                   selectedPersonas.includes(persona.id)
-                    ? "bg-background/50 hover:bg-background/70"
-                    : "bg-background hover:bg-background/30"
+                    ? "border-emerald-600 bg-emerald-50 text-emerald-800"
+                    : "border-border bg-card hover:bg-muted text-foreground"
                 )}
                 onClick={() => handlePersonaSelect(persona.id)}
               >
-                <div className="flex items-center justify-between w-full mb-2">
-                  <h3 className="font-medium text-base text-white">{persona.name}</h3>
+                <div className="flex items-center justify-between w-full mb-1">
+                  <h3 className="font-medium text-base">
+                    {persona.name}
+                  </h3>
                   {selectedPersonas.includes(persona.id) && (
-                    <Badge className="bg-emerald-500/20 text-emerald-400 ml-2">
+                    <Badge className="bg-emerald-100 text-emerald-800 ml-2 rounded-md px-2 py-1 text-sm">
                       Selected
                     </Badge>
+
                   )}
                 </div>
-                <p className="text-sm text-zinc-400 w-full break-words">
+                <p className="text-sm w-full break-words text-muted-foreground">
                   {persona.description}
                 </p>
               </Button>
+
             </div>
           ))}
         </div>

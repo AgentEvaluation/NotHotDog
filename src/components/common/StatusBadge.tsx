@@ -14,7 +14,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
       className={cn(
         status === 'running' && 'bg-yellow-500/20 text-yellow-400',
         status === 'failed' && 'bg-red-500/20 text-red-400',
-        status === 'pending' && 'bg-zinc-500/20 text-zinc-400'
+        status === 'pending' && 'bg-zinc-500/20 text-muted-foreground'
       )}
     >
       {status}

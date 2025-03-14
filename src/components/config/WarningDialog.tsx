@@ -43,7 +43,7 @@ export default function WarningDialog({ isOpen, onClose }: WarningDialogProps) {
           <DialogClose className="absolute right-4 top-4" />
           
         </DialogHeader>
-        <div className="mb-4 text-sm text-zinc-400">
+        <div className="mb-4 text-sm text-muted-foreground">
           Please navigate to Settings (
           <Settings className="inline w-4 h-4 mr-1" />) and set up your
           preferred LLM.

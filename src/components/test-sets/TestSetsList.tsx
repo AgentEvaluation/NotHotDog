@@ -35,10 +35,10 @@ export function TestSetsList() {
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="font-medium text-white">{testSet.name}</h3>
-                  <p className="text-sm text-zinc-400">{testSet.description}</p>
+                  <h3 className="font-medium text-foreground">{testSet.name}</h3>
+                  <p className="text-sm text-muted-foreground">{testSet.description}</p>
                 </div>
-                <div className="text-sm text-zinc-500">
+                <div className="text-sm text-muted-foreground">
                   {testSet.scenarios.length} scenarios
                 </div>
               </div>

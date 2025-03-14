@@ -61,13 +61,12 @@ export default function TestCasesPage() {
   }
 
   return (
-    <div className="grid grid-cols-12 gap-4 p-6">
-      {/* Agent Cases Column */}
+    <div className="grid grid-cols-12 gap-4 p-6 h-screen">
       <div className="col-span-4">
-        <Card className="bg-background border-border border max-h-screen overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900">
-          <CardHeader>
+        <Card className="bg-card text-card-foreground border border-border overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent h-screen">
+          <CardHeader className="pb-3">
             <div className="flex justify-between items-center">
-              <CardTitle>Agent Cases</CardTitle>
+              <CardTitle className="text-lg font-semibold">Select Testing Agent</CardTitle>
               <Badge variant="outline" className="bg-background">
                 {agentCases.length} Cases
               </Badge>
@@ -75,6 +74,7 @@ export default function TestCasesPage() {
             <div className="flex mt-2">
             </div>
           </CardHeader>
+
           <CardContent className="max-h-[calc(100vh-12rem)] overflow-y-auto">
             <div className="space-y-2">
               {agentCases.map((test) => (
@@ -82,11 +82,12 @@ export default function TestCasesPage() {
                   key={test.id}
                   className={`p-4 rounded-[var(--radius)] cursor-pointer transition-colors ${
                     selectedCase?.id === test.id
-                      ? "bg-background border border-zinc-700"
-                      : "bg-background hover:bg-background"
+                    ? "border border-primary text-foreground"
+                    : "bg-card hover:bg-muted text-foreground"
                   }`}
                   onClick={() => handleCaseSelect(test)}
                 >
+
                   <div className="flex justify-between items-start">
                     <div className="flex items-center">
                       <input
@@ -100,14 +101,14 @@ export default function TestCasesPage() {
                       </h3>
                     </div>
                   </div>
-                  <p className="text-sm text-zinc-400 mt-1 truncate max-w-[300px]">
+                  <p className="text-sm text-muted-foreground mt-1 truncate max-w-[300px]">
                     Endpoint: {test.endpoint}
                   </p>
                 </div>
               ))}
 
               {agentCases.length === 0 && (
-                <div className="text-center py-8 text-zinc-500">
+                <div className="text-center py-8 text-muted-foreground">
                   No agent cases yet. Create a test from the Dashboard.
                 </div>
               )}

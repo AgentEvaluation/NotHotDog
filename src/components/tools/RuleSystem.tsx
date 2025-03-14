@@ -63,7 +63,7 @@
 //       if (value && typeof value === 'object') {
 //         return (
 //           <div key={currentPath} className="ml-4">
-//             <div className="text-zinc-500">{key}:</div>
+//             <div className="text-muted-foreground">{key}:</div>
 //             {renderObject(value, currentPath)}
 //           </div>
 //         );
@@ -100,7 +100,7 @@
 //           <CardContent className="pt-4 space-y-2">
 //             {rules.map((rule, index) => (
 //               <div key={index} className="flex items-center gap-2">
-//                 <div className="text-sm text-zinc-400">{rule.path}</div>
+//                 <div className="text-sm text-muted-foreground">{rule.path}</div>
 //                 <select
 //                   value={rule.condition}
 //                   onChange={(e) => updateRule(index, { condition: e.target.value as Rule['condition'] })}

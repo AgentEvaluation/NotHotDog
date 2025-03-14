@@ -21,7 +21,7 @@ export function TestMetrics({ run }: TestMetricsProps) {
           <div>
             <h3 className="text-sm font-medium mb-2">Overall Success Rate</h3>
             <Progress value={overallSuccess * 100} className="h-2" />
-            <span className="text-sm text-zinc-400 mt-1">
+            <span className="text-sm text-muted-foreground mt-1">
               {(overallSuccess * 100).toFixed(1)}%
             </span>
           </div>

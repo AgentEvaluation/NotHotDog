@@ -27,10 +27,10 @@ export default function AgentDescription({
       >
         <div>
           <h3 className="text-lg font-medium">Agent Description</h3>
-          <p className="text-sm text-zinc-400">Define agent and user characteristics</p>
+          <p className="text-sm text-muted-foreground">Define agent and user characteristics</p>
         </div>
         <ChevronDown 
-          className={`w-5 h-5 text-zinc-400 transition-transform ${isCollapsed ? 'rotate-180' : ''}`}
+          className={`w-5 h-5 text-muted-foreground transition-transform ${isCollapsed ? 'rotate-180' : ''}`}
         />
       </div>
       
@@ -38,7 +38,7 @@ export default function AgentDescription({
         <div className="p-6 space-y-4">
           <div className="space-y-4">
             <div>
-              <Label className="text-sm text-zinc-400">Agent Description</Label>
+              <Label className="text-sm text-muted-foreground">Agent Description</Label>
               <Textarea
                 placeholder="Describe the agent's personality, behavior, and knowledge domain in detail"
                 value={agentDescription}
@@ -47,7 +47,7 @@ export default function AgentDescription({
               />
             </div>
             <div>
-              <Label className="text-sm text-zinc-400">Ideal User Profile</Label>
+              <Label className="text-sm text-muted-foreground">Ideal User Profile</Label>
               <Textarea
                 placeholder="Describe characteristics of an ideal user interacting with this agent..."
                 value={userDescription}

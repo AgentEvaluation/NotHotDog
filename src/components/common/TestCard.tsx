@@ -47,7 +47,7 @@ export function TestCard({
       <div className="space-y-4">
         <div>
           <p className="text-sm font-medium mb-1">{title}</p>
-          <p className="text-sm text-zinc-400">{description}</p>
+          <p className="text-sm text-muted-foreground">{description}</p>
         </div>
         {children}
       </div>

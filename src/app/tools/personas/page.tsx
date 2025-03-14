@@ -79,10 +79,19 @@ export default function PersonasScreen() {
   const handleCreatePersona = async () => {
     try {
       setLoading(true)
+
+      const apiKey = localStorage.getItem("anthropic_api_key");
+      if (!apiKey) {
+        setError("API key is required to generate personas");
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch('/api/tools/personas', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'X-API-Key': apiKey
         },
         body: JSON.stringify(newPersona)
       })

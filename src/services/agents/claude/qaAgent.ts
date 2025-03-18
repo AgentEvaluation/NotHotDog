@@ -79,7 +79,18 @@ export class QaAgent {
       await this.memory.clear();
 
       // Generate initial conversation plan and test message
-      const planInput = `Test this scenario: ${scenario}\nExpected behavior: ${expectedOutput}\n\nPlan and start a natural conversation to test this scenario.`;
+      const planInput = `Test this scenario: ${scenario}
+      Expected behavior: ${expectedOutput}
+      
+      Your task is to test this scenario through natural conversation:
+      
+      1. ANALYZE the scenario to identify the key elements that need testing
+      2. PLAN a strategic conversation that will specifically trigger the expected behavior
+      3. CONSIDER different approaches (direct questions, indirect prompts, specific examples)
+      4. START with an engaging opening message that naturally leads toward testing the scenario
+      5. REMEMBER to stay in character as a realistic user throughout the conversation
+      
+      Plan your approach carefully, then begin with a natural-sounding message that helps test this scenario.`;
       const planResult = await chain.invoke({ input: planInput });
       const initialTestMessage = ConversationHandler.extractTestMessage(planResult);
       const conversationPlan = ConversationHandler.extractConversationPlan(planResult);
@@ -254,16 +265,23 @@ export class QaAgent {
     expectedOutput: string
   ) {
     // Provide a strict instruction:
-    const promptText = `You are a strict evaluator. Return ONLY valid JSON. No extra text, no explanations outside the JSON.
-  
-  Test Scenario: ${scenario}
-  Expected Output: ${expectedOutput}
-  Complete Conversation:
-  ${fullConversation}
-  
-  Return JSON in this EXACT format:
-  {"isCorrect": true or false, "explanation": "Your reason in a single string"}
-  Do NOT include any text outside the braces. Do NOT include code fences.`;
+    const promptText = `You are a precise and strict evaluator tasked with determining if a conversation met specific requirements. Return ONLY valid JSON.
+
+    Test Scenario: ${scenario}
+    Expected Output: ${expectedOutput}
+    Complete Conversation:
+    ${fullConversation}
+
+    Evaluation Instructions:
+    1. Analyze if the assistant's responses collectively satisfy the Expected Output requirements
+    2. Focus on semantic meaning and intent fulfillment, not exact wording
+    3. Consider if all key information or actions requested in Expected Output were addressed
+    4. For failures, provide specific missing elements or contradictions
+
+    Return JSON in this EXACT format:
+    {"isCorrect": true or false, "explanation": "Your detailed reasoning explaining the specific elements that were met or missed"}
+
+    Do NOT include any text outside the braces. Do NOT include code fences.`
   
     const result = await this.model.invoke([{ role: 'user', content: promptText }]);
   

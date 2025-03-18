@@ -32,7 +32,7 @@ export function PersonaCard({
     <Card className="relative">
       {isEditing ? (
         <>
-          <PersonaEditForm persona={editingPersona} setPersona={setEditingPersona} />
+          {/* <PersonaEditForm persona={editingPersona} setPersona={setEditingPersona} /> */}
           <CardFooter className="flex justify-end gap-2">
             <Button size="sm" variant="ghost" onClick={onCancel}>
               <X className="h-4 w-4" />

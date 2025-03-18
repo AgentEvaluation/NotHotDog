@@ -10,28 +10,8 @@ import MetricsTable from "./MetricsTable"
 import MetricFormDialog from "./MetricFormDialog"
 
 export default function MetricsPage() {
-  // Sample data
-  const [metrics, setMetrics] = useState<Metric[]>([
-    {
-      id: "1",
-      name: "First Contact Resolution",
-      description: "Whether the customer issue was resolved in the first interaction",
-      type: "Binary Qualitative",
-      successCriteria: "Issue completely resolved without follow-up needed",
-      criticality: "High",
-      createdAt: "2023-11-10",
-    },
-    {
-      id: "2",
-      name: "Response Time",
-      description: "Time taken to respond to customer inquiry",
-      type: "Numeric",
-      successCriteria: "Less than 4 hours",
-      criticality: "Medium",
-      createdAt: "2023-11-09",
-    },
-  ])
 
+  const [metrics, setMetrics] = useState<Metric[]>([])
   const [selectedRows, setSelectedRows] = useState<string[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -251,15 +231,22 @@ export default function MetricsPage() {
               </CardHeader>
 
               <CardContent className="p-0">
+              {loading && (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              )}
                 {/* Metrics Table */}
-                <MetricsTable
-                  metrics={filteredMetrics}
-                  selectedRows={selectedRows}
-                  toggleRowSelection={toggleRowSelection}
-                  toggleSelectAll={toggleSelectAll}
-                  handleEditMetric={handleEditMetric}
-                  handleDeleteSingleMetric={handleDeleteSingleMetric}
-                />
+                {!loading && (
+                  <MetricsTable
+                    metrics={filteredMetrics}
+                    selectedRows={selectedRows}
+                    toggleRowSelection={toggleRowSelection}
+                    toggleSelectAll={toggleSelectAll}
+                    handleEditMetric={handleEditMetric}
+                    handleDeleteSingleMetric={handleDeleteSingleMetric}
+                  />
+                )}
               </CardContent>
             </Card>
           </div>

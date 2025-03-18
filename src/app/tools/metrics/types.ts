@@ -1,7 +1,7 @@
 export type MetricType =
   | "Binary Qualitative"
   | "Numeric"
-  | "Binary Workflow Adherence (always)"
+  | "Binary Workflow Adherence"
   | "Continuous Qualitative"
   | "Enum"
 

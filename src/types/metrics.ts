@@ -1,30 +1,3 @@
-// export interface BaseMetrics {
-//   correct: number;
-//   incorrect: number;
-// }
-
-// export interface TestMetrics extends BaseMetrics {
-//   total: number;
-//   passed: number;
-//   failed: number;
-//   chats: number;
-// }
-
-// export interface ChatMetrics extends BaseMetrics {
-//   correct: number;
-//   incorrect: number;
-// }
-
-// export type MetricVariant = 'success' | 'error' | 'neutral';
-
-// export interface MetricsDisplayProps {
-//   label: string;
-//   value: number;
-//   variant?: MetricVariant;
-//   className?: string;
-// } 
-
-
 export interface MessageMetrics {
   responseTime?: number;
   validationScore?: number;
@@ -59,4 +32,24 @@ export interface ChatMetrics extends BaseMetrics {
     containsFailures?: string[];
     notContainsFailures?: string[];
   };
+}
+
+export type MetricType = 
+  "Binary Qualitative" | 
+  "Numeric" | 
+  "Binary Workflow Adherence" | 
+  "Continuous Qualitative" | 
+  "Enum";
+
+export type Criticality = "Low" | "Medium" | "High";
+
+export interface Metric {
+  id: string;
+  name: string;
+  description?: string;
+  type: MetricType;
+  successCriteria?: string;
+  criticality?: Criticality;
+  agentIds?: string[];
+  createdAt?: string;
 }

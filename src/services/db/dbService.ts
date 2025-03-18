@@ -781,6 +781,197 @@ export class DbService {
       throw new Error("Failed to fetch organization");
     }
   }
+
+  async getMetrics(userId: string): Promise<any[]> {
+    try {
+      const profile = await prisma.profiles.findUnique({
+        where: { clerk_id: userId }
+      });
+      
+      if (!profile || !profile.org_id) {
+        return [];
+      }
+
+      const metrics = await prisma.metrics.findMany({
+        where: {
+          org_id: profile.org_id
+        },
+        include: {
+          agent_metrics: true
+        }
+      });
+      
+      return metrics.map(metric => ({
+        id: metric.id,
+        name: metric.name,
+        type: metric.type,
+        description: metric.check_criteria,
+        successCriteria: metric.success_criteria,
+        criticality: metric.criticality,
+        createdAt: metric.created_at,
+        agentIds: metric.agent_metrics.map(am => am.agent_id)
+      }));
+    } catch (error) {
+      console.error("Database error in getMetrics:", error);
+      return [];
+    }
+  }
+
+  async getMetricById(metricId: string) {
+    try {
+      const metric = await prisma.metrics.findUnique({
+        where: { id: metricId },
+        include: {
+          agent_metrics: true
+        }
+      });
+      
+      if (!metric) return null;
+      
+      return {
+        id: metric.id,
+        name: metric.name,
+        type: metric.type,
+        description: metric.check_criteria,
+        successCriteria: metric.success_criteria,
+        criticality: metric.criticality,
+        createdAt: metric.created_at,
+        agentIds: metric.agent_metrics.map(am => am.agent_id)
+      };
+    } catch (error) {
+      console.error("Database error in getMetricById:", error);
+      throw new Error("Failed to fetch metric");
+    }
+  }
+
+  async createMetric(data: {
+    name: string;
+    type: string;
+    description?: string;
+    successCriteria?: string;
+    criticality: string;
+    agentIds?: string[];
+    org_id: string;
+    created_by: string;
+  }) {
+    try {
+      const newMetric = await prisma.metrics.create({
+        data: {
+          org_id: data.org_id,
+          name: data.name,
+          check_criteria: data.description || "",
+          type: data.type,
+          success_criteria: data.successCriteria || "",
+          criticality: data.criticality,
+          created_by: data.created_by
+        }
+      });
+      
+      // Create agent associations if provided
+      if (data.agentIds && data.agentIds.length > 0) {
+        await this.associateMetricWithAgents(newMetric.id, data.agentIds);
+      }
+      
+      return {
+        id: newMetric.id,
+        name: newMetric.name,
+        type: newMetric.type,
+        description: newMetric.check_criteria,
+        successCriteria: newMetric.success_criteria,
+        criticality: newMetric.criticality,
+        createdAt: newMetric.created_at,
+        agentIds: data.agentIds || []
+      };
+    } catch (error) {
+      console.error("Database error in createMetric:", error);
+      throw new Error("Failed to create metric");
+    }
+  }
+
+  async updateMetric(id: string, data: {
+    name: string;
+    type: string;
+    description?: string;
+    successCriteria?: string;
+    criticality: string;
+    agentIds?: string[];
+  }) {
+    try {
+      const updatedMetric = await prisma.metrics.update({
+        where: { id },
+        data: {
+          name: data.name,
+          check_criteria: data.description || "",
+          type: data.type,
+          success_criteria: data.successCriteria || "",
+          criticality: data.criticality,
+          updated_at: new Date()
+        }
+      });
+      
+      // Update agent associations if provided
+      if (data.agentIds) {
+        await this.associateMetricWithAgents(id, data.agentIds);
+      }
+      
+      return {
+        id: updatedMetric.id,
+        name: updatedMetric.name,
+        type: updatedMetric.type,
+        description: updatedMetric.check_criteria,
+        successCriteria: updatedMetric.success_criteria,
+        criticality: updatedMetric.criticality,
+        updatedAt: updatedMetric.updated_at,
+        agentIds: data.agentIds || []
+      };
+    } catch (error) {
+      console.error("Database error in updateMetric:", error);
+      throw new Error("Failed to update metric");
+    }
+  }
+
+  async deleteMetric(id: string) {
+    try {
+      // First delete all agent_metrics associations
+      await prisma.agent_metrics.deleteMany({
+        where: { metric_id: id }
+      });
+      
+      // Then delete the metric
+      await prisma.metrics.delete({
+        where: { id }
+      });
+      
+      return { success: true };
+    } catch (error) {
+      console.error("Database error in deleteMetric:", error);
+      throw new Error("Failed to delete metric");
+    }
+  }
+
+  async associateMetricWithAgents(metricId: string, agentIds: string[]) {
+    try {
+      // First delete existing associations
+      await prisma.agent_metrics.deleteMany({
+        where: { metric_id: metricId }
+      });
+      
+      // Create new associations
+      if (agentIds.length > 0) {
+        await prisma.agent_metrics.createMany({
+          data: agentIds.map(agentId => ({
+            metric_id: metricId,
+            agent_id: agentId
+          }))
+        });
+      }
+      
+      return { success: true, agentIds };
+    } catch (error) {
+      console.error("Database error in associateMetricWithAgents:", error);
+      throw new Error("Failed to associate metric with agents");
+    }
+  }
 }
 
 export const dbService = DbService.getInstance();

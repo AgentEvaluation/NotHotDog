@@ -3,10 +3,12 @@ import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import WarningDialog from "@/components/config/WarningDialog";
-import { Plus, Edit, Trash } from "lucide-react";
+import { Plus, Edit, Trash, Upload } from "lucide-react";
 import { Loading } from "../common/Loading";
 import { useTestVariations } from "@/hooks/useTestVariations";
 import { TestVariation } from "@/types/variations";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import ScenarioFileUpload from "./ScenarioFileUpload";
 
 interface TestCase {
   id: string;
@@ -30,6 +32,7 @@ export function TestCaseVariations({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showApiKeyWarning, setShowApiKeyWarning] = useState(false);
+  const [showFileUploadDialog, setShowFileUploadDialog] = useState(false);
   const { 
     variationData, 
     loading, 
@@ -39,6 +42,7 @@ export function TestCaseVariations({
     deleteVariation,
     setLoading
   } = useTestVariations(selectedTestId);
+  
   useEffect(() => {
     if (variationData && selectedTestId) {
       setGeneratedCases(
@@ -49,6 +53,7 @@ export function TestCaseVariations({
       );
     }
   }, [variationData, selectedTestId]);
+  
   const generateTestCases = async () => {
     if (!selectedTestId) {
       console.error("Missing selected test ID");
@@ -94,12 +99,10 @@ export function TestCaseVariations({
       scenario: "",
       expectedOutput: "",
     };
-    const updatedCases = [...generatedCases, newCase];
 
-    setGeneratedCases(updatedCases);
+    setGeneratedCases([newCase, ...generatedCases]);
     setEditingId(newCase.id);
     setEditingState({ scenario: "", expectedOutput: "" });
-    setGeneratedCases([newCase, ...generatedCases]);
   };
 
   const saveEdit = async () => {
@@ -164,7 +167,6 @@ export function TestCaseVariations({
     }
   };
 
-  // Replace your deleteTestCase and deleteSelectedCases functions with this unified function:
   const deleteTestCases = async (idsToDelete: string[]) => {
     if (!selectedTestId) return;
 
@@ -198,64 +200,111 @@ export function TestCaseVariations({
     });
   };
 
+  const handleFileUpload = async (variation: TestVariation) => {
+    try {
+      setLoading(true);
+      await addVariation(variation);
+      
+      // Update local state with the new cases
+      setGeneratedCases(prevCases => {
+        const newCases = variation.cases.map(c => ({
+          id: c.id,
+          sourceTestId: c.sourceTestId,
+          scenario: c.scenario,
+          expectedOutput: c.expectedOutput
+        }));
+        return [...newCases, ...prevCases];
+      });
+      setShowFileUploadDialog(false);
+    } catch (error) {
+      console.error("Failed to add uploaded test cases:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const showBulkActions = generatedCases.length > 1 && selectedIds.length > 0;
 
   return (
-      <Card className="bg-card text-card-foreground border border-border h-screen overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold">Test Case Variations</CardTitle>
-        </CardHeader>
+    <Card className="bg-card text-card-foreground border border-border h-screen overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg font-semibold">Test Case Variations</CardTitle>
+      </CardHeader>
 
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          {loading && (
-            <div className="fixed inset-0 flex items-center justify-center bg-background bg-opacity-50 z-50">
-              <Loading size="lg" message="Generating test cases..." />
-            </div>
-          )}
-
-          {/* Left group: Add / Generate */}
-          <div className="flex gap-2">
-          {selectedTestId && (generatedCases.length > 0 ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 px-3"
-              onClick={addNewTestCase}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Test Case
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              onClick={generateTestCases}
-              disabled={loading}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Generate Scenarios
-            </Button>
-          ))}
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        {loading && (
+          <div className="fixed inset-0 flex items-center justify-center bg-background bg-opacity-50 z-50">
+            <Loading size="lg" message="Processing..." />
           </div>
+        )}
 
-          {/* Right group: Select All / Delete Selected */}
-          <div className="flex gap-2">
+        {/* Left group: Add / Generate / Upload */}
+        <div className="flex gap-2">
+          {selectedTestId && (generatedCases.length > 0 ? (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 px-3"
+                onClick={addNewTestCase}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Test Case
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 px-3"
+                onClick={() => setShowFileUploadDialog(true)}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Upload
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                size="sm"
+                onClick={generateTestCases}
+                disabled={loading}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Generate Scenarios
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 px-3"
+                onClick={() => setShowFileUploadDialog(true)}
+                disabled={!selectedTestId}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Upload
+              </Button>
+            </>
+          ))}
+        </div>
+
+        {/* Right group: Select All / Delete Selected */}
+        <div className="flex gap-2">
+          {generatedCases.length > 0 && (
             <Button size="sm" onClick={selectAllCases}>
               {selectedIds.length === generatedCases.length
                 ? "Deselect All"
                 : "Select All"}
             </Button>
-            {selectedIds.length > 0 && (
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => deleteTestCases(selectedIds)}
-              >
-                Delete Selected
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-
+          )}
+          {selectedIds.length > 0 && (
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => deleteTestCases(selectedIds)}
+            >
+              Delete Selected
+            </Button>
+          )}
+        </div>
+      </CardHeader>
 
       <CardContent className="space-y-4">
         {generatedCases.map((testCase) => (
@@ -371,6 +420,12 @@ export function TestCaseVariations({
             Select an agent case to generate variations.
           </div>
         )}
+
+        {selectedTestId && generatedCases.length === 0 && !loading && (
+          <div className="text-center py-8 text-muted-foreground">
+            No test cases yet. Generate or upload test cases to get started.
+          </div>
+        )}
       </CardContent>
 
       {showApiKeyWarning && (
@@ -379,6 +434,25 @@ export function TestCaseVariations({
           onClose={() => setShowApiKeyWarning(false)}
         />
       )}
+
+      <Dialog open={showFileUploadDialog} onOpenChange={setShowFileUploadDialog}>
+        <DialogContent className="sm:max-w-2xl w-full p-0 overflow-hidden border border-border">
+          <div className="bg-muted py-4 px-6 border-b border-border mb-2">
+            <h2 className="text-xl font-semibold">Import Test Scenarios</h2>
+            <p className="text-sm text-muted-foreground mt-1">Upload a CSV or Excel file with scenarios and expected outputs</p>
+          </div>
+          
+          {selectedTestId && (
+            <div className="p-6">
+              <ScenarioFileUpload
+                selectedTestId={selectedTestId}
+                onFileProcessed={handleFileUpload}
+                onClose={() => setShowFileUploadDialog(false)}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

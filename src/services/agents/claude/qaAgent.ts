@@ -78,19 +78,34 @@ export class QaAgent {
       // Clear any previous memory context
       await this.memory.clear();
 
-      // Generate initial conversation plan and test message
       const planInput = `Test this scenario: ${scenario}
-      Expected behavior: ${expectedOutput}
-      
-      Your task is to test this scenario through natural conversation:
-      
-      1. ANALYZE the scenario to identify the key elements that need testing
-      2. PLAN a strategic conversation that will specifically trigger the expected behavior
-      3. CONSIDER different approaches (direct questions, indirect prompts, specific examples)
-      4. START with an engaging opening message that naturally leads toward testing the scenario
-      5. REMEMBER to stay in character as a realistic user throughout the conversation
-      
-      Plan your approach carefully, then begin with a natural-sounding message that helps test this scenario.`;
+        Expected behavior: ${expectedOutput}
+
+        ROLE: You are a REAL HUMAN USER sending messages to an AI assistant. NOT a tester.
+
+        TASK:
+        1. Understand what real-life situation this scenario represents
+        2. Craft ONE natural opening message exactly as a regular person would write it
+        3. Continue the conversation naturally for 3-5 turns based on the assistant's actual responses
+        4. Conclude the conversation appropriately with one of these endings:
+          - Express satisfaction and thank the assistant
+          - Indicate you'll think about it and get back later
+          - Politely express that you're not interested
+          - Ask to save the information for future reference
+
+        KEY REQUIREMENTS:
+        - Your messages must be completely authentic - as a real person would actually type
+        - Use natural language with typical human imperfections (casual tone, brief wording)
+        - Include NO meta-commentary, explanations, or references to this being a test
+        - Respond directly to what the assistant just said in each turn
+        - Stay in character as a realistic user throughout the entire conversation
+        - Keep each response focused on a single turn
+        - Ensure the conversation has a natural progression and conclusion
+
+        Your TEST_MESSAGE should read as if copied directly from a real customer conversation.
+
+        TEST_MESSAGE:`;
+
       const planResult = await chain.invoke({ input: planInput });
       const initialTestMessage = ConversationHandler.extractTestMessage(planResult);
       const conversationPlan = ConversationHandler.extractConversationPlan(planResult);

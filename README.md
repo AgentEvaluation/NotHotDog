@@ -25,7 +25,7 @@ NotHotDog is an open-source platform designed for comprehensive testing, evaluat
 ### Steps
 1. Clone the repository
 ```bash
-git clone https://github.com/vedhsaka/NotHotDog.git
+git clone https://github.com/AgentEvaluation/NotHotDog.git
 cd NotHotDog
 ```
 
@@ -34,14 +34,22 @@ cd NotHotDog
 npm install
 ```
 
-3. Set up environment variables
-- Create a `.env.local` file
-- Add your Anthropic API key:
-```
-NEXT_PUBLIC_ANTHROPIC_API_KEY=your_anthropic_api_key
+3. Initialize Prisma
+```bash
+npx prisma generate
 ```
 
-4. Run the development server
+4. Set up environment variables
+- Create a `.env.local` file
+- Add the database URL:
+```
+ANTHROPIC_API_KEY=anthropic_api_key
+DATABASE_URL=postgres_supabase_url
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=public_clerk_key
+CLERK_SECRET_KEY=clerk_key
+```
+
+5. Run the development server
 ```bash
 npm run dev
 ```
@@ -50,9 +58,10 @@ npm run dev
 
 ### Testing Scenarios
 1. Navigate to `/tools/test-cases`
-2. Create test sets with custom scenarios
-3. Generate and run test variations
-4. Analyze agent performance metrics
+2. Select preferred model and configure API keys in Settings
+3. Create test sets with custom scenarios
+4. Generate and run test variations
+5. Analyze agent performance metrics
 
 ### Key Workflows
 - Generate diverse test cases
@@ -86,7 +95,7 @@ npm run dev
 
 - 🧪 Automated Test Case Generation with 50+ Parallel Runs
 - 📊 Comprehensive Metrics Dashboard
-- 🤖 Personality Based Testing
+- 🤖 Personality-Based Testing
 - 🔍 Detailed Response Validation
 - 📈 Performance Analytics
 - 🌐 Scenario-based Testing
@@ -138,7 +147,7 @@ npm run dev
 ## Contact
 
 **Project Maintainer:** NotHotDog
-- GitHub: [@vedhsaka](https://github.com/vedhsaka)
+- GitHub: [@AgentEvaluation](https://github.com/AgentEvaluation)
 <!--- - Email: your.email@example.com --->
 
 ## License

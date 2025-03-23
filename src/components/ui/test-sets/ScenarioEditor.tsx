@@ -90,7 +90,7 @@ export function ScenarioEditor({ scenario, onChange, onDelete }: ScenarioEditorP
                   
                   {step.role === 'user' && (
                     <div className="space-y-2">
-                      <h5 className="text-sm font-medium text-zinc-400">Validation Points</h5>
+                      <h5 className="text-sm font-medium text-muted-foreground">Validation Points</h5>
                       <Textarea 
                         placeholder="Expected phrases (one per line)"
                         value={step.validationPoints?.contains?.join('\n') || ''}

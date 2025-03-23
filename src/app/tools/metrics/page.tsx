@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Sparkles, Plus, FileText, Search, Trash2 } from "lucide-react"
@@ -10,32 +10,14 @@ import MetricsTable from "./MetricsTable"
 import MetricFormDialog from "./MetricFormDialog"
 
 export default function MetricsPage() {
-  // Sample data
-  const [metrics, setMetrics] = useState<Metric[]>([
-    {
-      id: "1",
-      name: "First Contact Resolution",
-      description: "Whether the customer issue was resolved in the first interaction",
-      type: "Binary Qualitative",
-      successCriteria: "Issue completely resolved without follow-up needed",
-      criticality: "High",
-      createdAt: "2023-11-10",
-    },
-    {
-      id: "2",
-      name: "Response Time",
-      description: "Time taken to respond to customer inquiry",
-      type: "Numeric",
-      successCriteria: "Less than 4 hours",
-      criticality: "Medium",
-      createdAt: "2023-11-09",
-    },
-  ])
 
+  const [metrics, setMetrics] = useState<Metric[]>([])
   const [selectedRows, setSelectedRows] = useState<string[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState("all")
+  const [loading, setLoading] = useState(true)
+
 
   const initialFormState = {
     name: "",
@@ -48,6 +30,25 @@ export default function MetricsPage() {
   const [formData, setFormData] = useState(initialFormState)
   const [editingMetric, setEditingMetric] = useState<string | null>(null)
 
+  useEffect(() => {
+    fetchMetrics()
+  }, [])
+
+  // Add fetchMetrics function
+  const fetchMetrics = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/tools/metrics')
+      if (!res.ok) throw new Error('Failed to fetch metrics')
+      const data = await res.json()
+      setMetrics(data)
+    } catch (error) {
+      console.error('Error fetching metrics:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Filter metrics based on search query and active tab
   const filteredMetrics = metrics.filter((metric) => {
     const matchesSearch =
@@ -58,7 +59,6 @@ export default function MetricsPage() {
     return matchesSearch && metric.criticality?.toLowerCase() === activeTab.toLowerCase()
   })
 
-  // Handle row selection
   const toggleRowSelection = (id: string) => {
     if (selectedRows.includes(id)) {
       setSelectedRows(selectedRows.filter((rowId) => rowId !== id))
@@ -67,7 +67,6 @@ export default function MetricsPage() {
     }
   }
 
-  // Handle select all rows
   const toggleSelectAll = () => {
     if (selectedRows.length === filteredMetrics.length) {
       setSelectedRows([])
@@ -76,21 +75,45 @@ export default function MetricsPage() {
     }
   }
 
-  // Handle deleting multiple metrics
-  const handleDeleteMetrics = () => {
-    setMetrics(metrics.filter((metric) => !selectedRows.includes(metric.id)))
-    setSelectedRows([])
+  const handleDeleteMetrics = async () => {
+    try {
+      setLoading(true)
+      for (const id of selectedRows) {
+        await fetch(`/api/tools/metrics/${id}`, { 
+          method: 'DELETE' 
+        })
+      }
+      
+      await fetchMetrics()
+      setSelectedRows([])
+    } catch (error) {
+      console.error('Error deleting metrics:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  // Handle deleting a single metric
-  const handleDeleteSingleMetric = (id: string) => {
-    setMetrics(metrics.filter((m) => m.id !== id))
+  const handleDeleteSingleMetric = async (id: string) => {
+    try {
+      setLoading(true)
+      await fetch(`/api/tools/metrics/${id}`, {
+        method: 'DELETE'
+      })
+      await fetchMetrics()
+    } catch (error) {
+      console.error('Error deleting metric:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  // Handle edit metric
-  const handleEditMetric = (id: string) => {
-    const metricToEdit = metrics.find((m) => m.id === id)
-    if (metricToEdit) {
+  const handleEditMetric = async (id: string) => {
+    try {
+      setLoading(true)
+      const res = await fetch(`/api/tools/metrics/${id}`)
+      if (!res.ok) throw new Error('Failed to fetch metric details')
+      
+      const metricToEdit = await res.json()
       setFormData({
         name: metricToEdit.name,
         description: metricToEdit.description || "",
@@ -100,37 +123,41 @@ export default function MetricsPage() {
       })
       setEditingMetric(id)
       setIsModalOpen(true)
+    } catch (error) {
+      console.error('Error fetching metric to edit:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
-  // Handle save (create/update) metric
-  const handleSaveMetric = () => {
-    if (editingMetric) {
-      // Update existing metric
-      setMetrics((prev) =>
-        prev.map((metric) =>
-          metric.id === editingMetric
-            ? {
-                ...metric,
-                ...formData,
-              }
-            : metric
-        )
-      )
-    } else {
-      // Create new metric
-      const newMetric: Metric = {
-        id: (metrics.length + 1).toString(),
-        ...formData,
-        createdAt: new Date().toISOString().split("T")[0],
+  const handleSaveMetric = async () => {
+    try {
+      setLoading(true)
+      
+      if (editingMetric) {
+        await fetch(`/api/tools/metrics/${editingMetric}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        })
+      } else {
+        await fetch('/api/tools/metrics', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        })
       }
-      setMetrics([...metrics, newMetric])
+      
+      await fetchMetrics()
+      
+      setFormData(initialFormState)
+      setEditingMetric(null)
+      setIsModalOpen(false)
+    } catch (error) {
+      console.error('Error saving metric:', error)
+    } finally {
+      setLoading(false)
     }
-
-    // Reset form
-    setFormData(initialFormState)
-    setEditingMetric(null)
-    setIsModalOpen(false)
   }
 
   return (
@@ -204,15 +231,22 @@ export default function MetricsPage() {
               </CardHeader>
 
               <CardContent className="p-0">
+              {loading && (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              )}
                 {/* Metrics Table */}
-                <MetricsTable
-                  metrics={filteredMetrics}
-                  selectedRows={selectedRows}
-                  toggleRowSelection={toggleRowSelection}
-                  toggleSelectAll={toggleSelectAll}
-                  handleEditMetric={handleEditMetric}
-                  handleDeleteSingleMetric={handleDeleteSingleMetric}
-                />
+                {!loading && (
+                  <MetricsTable
+                    metrics={filteredMetrics}
+                    selectedRows={selectedRows}
+                    toggleRowSelection={toggleRowSelection}
+                    toggleSelectAll={toggleSelectAll}
+                    handleEditMetric={handleEditMetric}
+                    handleDeleteSingleMetric={handleDeleteSingleMetric}
+                  />
+                )}
               </CardContent>
             </Card>
           </div>
@@ -235,3 +269,5 @@ export default function MetricsPage() {
     </div>
   )
 }
+
+

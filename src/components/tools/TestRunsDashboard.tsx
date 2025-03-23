@@ -71,7 +71,7 @@ export function TestRunsDashboard() {
 
         <div>
           <h2 className="text-xl font-semibold">{selectedChat.name}</h2>
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-muted-foreground">
             View conversation and responses
           </p>
         </div>
@@ -131,7 +131,7 @@ export function TestRunsDashboard() {
 
         <div className="space-y-1">
           <h2 className="text-xl font-semibold">Run #{selectedRun.name}</h2>
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-muted-foreground">
             All conversations in this test run
           </p>
         </div>
@@ -147,10 +147,10 @@ export function TestRunsDashboard() {
                 <div className="font-medium">
                   {chat.scenarioName ?? "Unknown Scenario"}
                 </div>
-                <div className="text-sm text-zinc-400">
+                <div className="text-sm text-muted-foreground">
                   {chat.personaName ?? "Unknown Persona"}
                 </div>
-                <p className="text-sm text-zinc-400">
+                <p className="text-sm text-muted-foreground">
                   {chat.messages.length} messages
                 </p>
               </div>
@@ -167,11 +167,11 @@ export function TestRunsDashboard() {
                 >
                   {chat.status}
                 </Badge>
-                <span className="text-zinc-400">→</span>
+                <span className="text-muted-foreground">→</span>
               </div>
 
               <div className="w-[40%] flex items-center justify-end">
-                <span className="text-zinc-400">→</span>
+                <span className="text-muted-foreground">→</span>
               </div>
             </div>
           ))}
@@ -185,7 +185,7 @@ export function TestRunsDashboard() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-xl font-semibold">Test Runs</h2>
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-muted-foreground">
             History of all test executions
           </p>
         </div>
@@ -225,13 +225,13 @@ export function TestRunsDashboard() {
           >
             <div className="w-[30%] flex items-center gap-2">
               <span className="font-medium">{run.name}</span>
-              <span className="text-zinc-400 text-sm">
+              <span className="text-muted-foreground text-sm">
                 {new Date(run.timestamp).toLocaleString()}
               </span>
             </div>
 
             <div className="w-[50%] flex items-center gap-4">
-              <span className="text-zinc-400">
+              <span className="text-muted-foreground">
                 Tests: {run.metrics.total || 0}
               </span>
               <div className="flex items-center gap-4">
@@ -248,13 +248,13 @@ export function TestRunsDashboard() {
 
             <div className="w-[20%] flex items-center justify-end gap-2">
               <Badge>{run.status}</Badge>
-              <span className="text-zinc-400">→</span>
+              <span className="text-muted-foreground">→</span>
             </div>
           </div>
         ))}
 
         {runs.length === 0 && (
-          <div className="text-center py-8 text-zinc-500">
+          <div className="text-center py-8 text-muted-foreground">
             No test runs yet. Generate and run some tests to get started.
           </div>
         )}

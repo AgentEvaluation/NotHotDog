@@ -1,13 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { Settings } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogClose
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -21,6 +19,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AnthropicModel } from "@/services/llm/enums";
+
+interface ApiKeyConfigProps {
+  isOpen: boolean;
+  setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}
 
 export default function ApiKeyConfig() {
   const [keyName, setKeyName] = useState("");
@@ -37,16 +40,6 @@ export default function ApiKeyConfig() {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute bottom-4 left-4 h-10 w-10"
-          onClick={() => setIsOpen(true)}
-        >
-          <Settings className="h-5 w-5" />
-        </Button>
-      </DialogTrigger>
       <div className={`modal-overlay ${isOpen ? "block" : "hidden"}`} />
       <DialogContent className="sm:max-w-[425px] border-border">
         <DialogHeader className="flex flex-row justify-between items-center">

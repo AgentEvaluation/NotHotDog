@@ -45,7 +45,7 @@ export default function AgentRules({ manualResponse, rules, setRules, agentId }:
                         type="text"
                         readOnly
                         value={rule.path}
-                        className="bg-background border border-border text-sm py-1 px-2 rounded-[var(--radius)] flex-1 text-zinc-400 cursor-not-allowed"
+                        className="bg-background border border-border text-sm py-1 px-2 rounded-[var(--radius)] flex-1 text-muted-foreground cursor-not-allowed"
                         />
                         {/* Delete button */}
                         <Button
@@ -134,12 +134,12 @@ export default function AgentRules({ manualResponse, rules, setRules, agentId }:
                 </div>
                 </div>
             ) : (
-                <div className="text-zinc-500 text-center py-8 px-4 bg-background rounded-[var(--radius)] border border-dashed border-border">
+                <div className="text-muted-foreground text-center py-8 px-4 bg-background rounded-[var(--radius)] border border-dashed border-border">
                 Click + next to response fields to add validation rules
                 </div>
             )
             ) : (
-            <div className="text-zinc-500 text-center py-8 px-4 bg-background rounded-[var(--radius)] border border-dashed border-border">
+            <div className="text-muted-foreground text-center py-8 px-4 bg-background rounded-[var(--radius)] border border-dashed border-border">
                 Test the agent to add validation rules
             </div>
             )}

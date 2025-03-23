@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Button } from "@/components/ui/button"
 import { MetricType, Criticality } from "./types"
+import { Slider } from "@/components/ui/slider";
 
 interface FormData {
   name: string
@@ -46,25 +47,13 @@ export default function MetricFormDialog({
 
         <div className="grid gap-6 py-4">
           <div className="grid gap-3">
-            <Label htmlFor="name">Metric Name</Label>
+            <Label htmlFor="name">Metric Label</Label>
             <Input
               id="name"
               name="name"
               value={formData.name}
               onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-              placeholder="Enter metric name"
-            />
-          </div>
-
-          <div className="grid gap-3">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-              placeholder="Enter metric description"
-              rows={3}
+              placeholder="Enter metric label"
             />
           </div>
 
@@ -80,14 +69,48 @@ export default function MetricFormDialog({
               <SelectContent>
                 <SelectItem value="Binary Qualitative">Binary Qualitative</SelectItem>
                 <SelectItem value="Numeric">Numeric</SelectItem>
-                <SelectItem value="Binary Workflow Adherence (always)">Binary Workflow Adherence</SelectItem>
+                <SelectItem value="Binary Workflow Adherence">Binary Workflow Adherence</SelectItem>
                 <SelectItem value="Continuous Qualitative">Continuous Qualitative</SelectItem>
                 <SelectItem value="Enum">Enum</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
+          {formData.type && (
+  <div className="rounded-md bg-muted p-3 text-sm text-muted-foreground">
+    {formData.type === "Binary Qualitative" && (
+      <p>Captures descriptive questions with only two possible values (Yes/No, Pass/Fail).</p>
+    )}
+    {formData.type === "Numeric" && (
+      <p>Represents quantitative data that can be measured numerically (counts, percentages).</p>
+    )}
+    {formData.type === "Binary Workflow Adherence" && (
+      <p>Tracks whether a process followed the expected workflow or sequence of steps.</p>
+    )}
+    {formData.type === "Continuous Qualitative" && (
+      <p>Measures qualitative aspects on a continuous scale (typically 1-10).</p>
+    )}
+    {formData.type === "Enum" && (
+      <p>Metrics with multiple predefined categories (e.g., Positive, Neutral, Negative).</p>
+    )}
+  </div>
+)}
+
+          
+
           <div className="grid gap-3">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+              placeholder="Enter metric description"
+              rows={3}
+            />
+          </div>
+
+          {/* <div className="grid gap-3">
             <Label htmlFor="successCriteria">Success Criteria</Label>
             <Textarea
               id="successCriteria"
@@ -97,6 +120,79 @@ export default function MetricFormDialog({
               placeholder="Define what constitutes success for this metric"
               rows={2}
             />
+          </div> */}
+
+          {/* Replace the existing success criteria input with this conditional UI */}
+          
+          <div className="grid gap-3">
+            <Label htmlFor="successCriteria">Success Criteria</Label>
+            
+            {formData.type === "Binary Qualitative" && (
+            <RadioGroup
+              value={formData.successCriteria}
+              onValueChange={(value) => setFormData((prev) => ({ ...prev, successCriteria: value }))}
+              className="flex space-x-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Yes" id="criteria-yes" />
+                <Label htmlFor="criteria-yes" className="cursor-pointer">Yes</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="No" id="criteria-no" />
+                <Label htmlFor="criteria-no" className="cursor-pointer">No</Label>
+              </div>
+            </RadioGroup>
+          )}
+            
+            {formData.type === "Numeric" && (
+              <Input
+                id="successCriteria"
+                name="successCriteria"
+                value={formData.successCriteria}
+                onChange={(e) => setFormData((prev) => ({ ...prev, successCriteria: e.target.value }))}
+                placeholder="Enter numeric threshold (e.g., >=5)"
+                type="text"
+              />
+            )}
+            
+            {formData.type === "Binary Workflow Adherence" && (
+              <Textarea
+                id="successCriteria"
+                name="successCriteria"
+                value={formData.successCriteria}
+                onChange={(e) => setFormData((prev) => ({ ...prev, successCriteria: e.target.value }))}
+                placeholder="Define workflow steps that must be followed"
+                rows={3}
+              />
+            )}
+            
+            {formData.type === "Continuous Qualitative" && (
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <span>Min: 1</span>
+                  <span>Current: {formData.successCriteria || '5'}</span>
+                  <span>Max: 10</span>
+                </div>
+                <Slider
+                  min={1}
+                  max={10}
+                  step={1}
+                  value={[parseInt(formData.successCriteria) || 5]}
+                  onValueChange={(value) => setFormData((prev) => ({ ...prev, successCriteria: value[0].toString() }))}
+                />
+              </div>
+            )}
+            
+            {formData.type === "Enum" && (
+              <Textarea
+                id="successCriteria"
+                name="successCriteria"
+                value={formData.successCriteria}
+                onChange={(e) => setFormData((prev) => ({ ...prev, successCriteria: e.target.value }))}
+                placeholder="Enter comma-separated values (e.g., Positive, Neutral, Negative)"
+                rows={2}
+              />
+            )}
           </div>
 
           <div className="grid gap-3">

@@ -113,14 +113,18 @@ export default function ToolsPage() {
   return (
     <div className="relative min-h-screen p-6" tabIndex={-1}>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">Configue Agent</h2>
+        <h2 className="text-xl font-semibold">Configure Agent</h2>
         <div className="flex gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                Load Saved Agent
-                <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border border-border"
+            >
+              Load Saved Agent
+              <ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[200px]">
               {savedAgents.length > 0 ? (
@@ -150,37 +154,44 @@ export default function ToolsPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-transparent p-0 border-b border-border gap-2">
-          <TabsTrigger
-            value="description"
-            className="
-              px-3
-              py-1
-              text-sm
-              text-muted-foreground
-              transition-colors
-              data-[state=active]:bg-gray-700
-              data-[state=active]:text-white
-              data-[state=active]:rounded-md
-            "
-          >
-            Agent Description
-          </TabsTrigger>
-          <TabsTrigger
-            value="testing"
-            className="
-              px-3
-              py-1
-              text-sm
-              text-muted-foreground
-              transition-colors
-              data-[state=active]:bg-gray-700
-              data-[state=active]:text-white
-              data-[state=active]:rounded-md
-            "
-          >
-            Testing Setup
-          </TabsTrigger>
+      <TabsList className="bg-transparent p-0 border-b border-border gap-2">
+        <TabsTrigger
+          value="description"
+          className="
+            relative
+            px-3
+            py-2
+            text-sm
+            text-muted-foreground
+            transition-colors
+            data-[state=active]:border-b-2
+            data-[state=active]:border-primary
+            data-[state=active]:text-foreground
+            data-[state=active]:bg-transparent
+            data-[state=active]:rounded-none
+          "
+        >
+          Agent Description
+        </TabsTrigger>
+        <TabsTrigger
+          value="testing"
+          className="
+            relative
+            px-3
+            py-2
+            text-sm
+            text-muted-foreground
+            transition-colors
+            data-[state=active]:border-b-2
+            data-[state=active]:border-primary
+            data-[state=active]:text-foreground
+            data-[state=active]:bg-transparent
+            data-[state=active]:rounded-none
+          "
+        >
+          Testing Setup
+        </TabsTrigger>
+
         </TabsList>
 
         <TabsContent value="description">

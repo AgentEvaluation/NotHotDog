@@ -9,6 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Button } from "@/components/ui/button"
 import { MetricType, Criticality } from "./types"
 import { Slider } from "@/components/ui/slider";
+import { useEffect, useState } from "react"
 
 interface FormData {
   name: string
@@ -16,6 +17,7 @@ interface FormData {
   type: MetricType
   successCriteria: string
   criticality: Criticality
+  agentIds: string[]
 }
 
 interface MetricFormDialogProps {
@@ -28,6 +30,7 @@ interface MetricFormDialogProps {
   editingMetric: string | null
 }
 
+
 export default function MetricFormDialog({
   open,
   onOpenChange,
@@ -37,6 +40,30 @@ export default function MetricFormDialog({
   onCancel,
   editingMetric,
 }: MetricFormDialogProps) {
+
+  const [agentConfigs, setAgentConfigs] = useState<Array<{ id: string, name: string }>>([])
+  const [isLoadingAgents, setIsLoadingAgents] = useState(false)
+
+  useEffect(() => {
+    async function fetchAgentConfigs() {
+      try {
+        setIsLoadingAgents(true)
+        const response = await fetch("/api/tools/agent-config")
+        if (!response.ok) throw new Error("Failed to fetch agent configs")
+        const data = await response.json()
+        setAgentConfigs(data)
+      } catch (error) {
+        console.error("Error fetching agent configs:", error)
+      } finally {
+        setIsLoadingAgents(false)
+      }
+    }
+    
+    if (open) {
+      fetchAgentConfigs()
+    }
+  }, [open])
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl">
@@ -221,6 +248,44 @@ export default function MetricFormDialog({
                 </Label>
               </div>
             </RadioGroup>
+          </div>
+        </div>
+        <div className="grid gap-3 mt-4">
+          <Label>Apply to Agents</Label>
+          <div className="border rounded-md p-4 max-h-40 overflow-y-auto">
+            {isLoadingAgents ? (
+              <div className="flex justify-center py-2">
+                <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full"></div>
+              </div>
+            ) : agentConfigs.length > 0 ? (
+              <div className="grid gap-2">
+                {agentConfigs.map((agent) => (
+                  <div key={agent.id} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`agent-${agent.id}`}
+                      checked={formData.agentIds.includes(agent.id)}
+                      onChange={(e) => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          agentIds: e.target.checked
+                            ? [...prev.agentIds, agent.id]
+                            : prev.agentIds.filter((id) => id !== agent.id)
+                        }))
+                      }}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <label htmlFor={`agent-${agent.id}`} className="text-sm">
+                      {agent.name}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-2">
+                No agent configurations available
+              </p>
+            )}
           </div>
         </div>
 

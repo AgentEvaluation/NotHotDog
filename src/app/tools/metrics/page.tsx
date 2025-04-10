@@ -25,6 +25,7 @@ export default function MetricsPage() {
     type: "Binary Qualitative" as MetricType,
     successCriteria: "",
     criticality: "Medium" as Criticality,
+    agentIds: [] as string[]
   }
 
   const [formData, setFormData] = useState(initialFormState)
@@ -120,6 +121,7 @@ export default function MetricsPage() {
         type: metricToEdit.type,
         successCriteria: metricToEdit.successCriteria || "",
         criticality: metricToEdit.criticality || "Medium",
+        agentIds: metricToEdit.agentIds || []
       })
       setEditingMetric(id)
       setIsModalOpen(true)

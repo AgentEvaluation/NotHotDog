@@ -801,7 +801,7 @@ export class DbService {
         successCriteria: metric.success_criteria,
         criticality: metric.criticality,
         createdAt: metric.created_at,
-        agentIds: metric.agent_metrics.map(am => am.agent_id)
+        agentIds: metric.agent_metrics.map((am: { agent_id: string }) => am.agent_id)
       };
     } catch (error) {
       console.error("Database error in getMetricById:", error);
@@ -862,6 +862,7 @@ export class DbService {
         }
       });
       
+      
       return {
         id: newMetric.id,
         name: newMetric.name,
@@ -895,6 +896,31 @@ export class DbService {
       throw new Error("Failed to delete metric");
     }
   }
+
+  // async createAgentMetricMappings(metricId: string, agentIds: string[]) {
+  //   try {
+  //     // Remove any existing mappings first
+  //     await prisma.agent_metrics.deleteMany({
+  //       where: { metric_id: metricId }
+  //     });
+      
+  //     // Create new mappings
+  //     if (agentIds.length > 0) {
+  //       await prisma.agent_metrics.createMany({
+  //         data: agentIds.map(agentId => ({
+  //           metric_id: metricId,
+  //           agent_id: agentId,
+  //           enabled: true
+  //         }))
+  //       });
+  //     }
+      
+  //     return true;
+  //   } catch (error) {
+  //     console.error("Error creating agent metric mappings:", error);
+  //     throw error;
+  //   }
+  // }
 }
 
 export const dbService = DbService.getInstance();

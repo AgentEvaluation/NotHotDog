@@ -34,12 +34,12 @@ export interface ChatMetrics extends BaseMetrics {
   };
 }
 
-export type MetricType = 
-  "Binary Qualitative" | 
-  "Numeric" | 
-  "Binary Workflow Adherence" | 
-  "Continuous Qualitative" | 
-  "Enum";
+export type MetricType =
+  | "Binary Qualitative"
+  | "Numeric"
+  | "Binary Workflow Adherence"
+  | "Continuous Qualitative"
+  | "Enum"
 
 export type Criticality = "Low" | "Medium" | "High";
 

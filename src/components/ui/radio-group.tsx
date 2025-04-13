@@ -30,7 +30,7 @@ RadioGroup.displayName = "RadioGroup"
 
 interface RadioGroupItemProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   value: string
-  children: React.ReactNode
+  children?: React.ReactNode
 }
 
 const RadioGroupItem = React.forwardRef<HTMLButtonElement, RadioGroupItemProps>(

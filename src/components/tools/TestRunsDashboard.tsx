@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TestMessage } from "@/types/runs";
-import { TestChat } from "@/types/chat";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -79,54 +78,6 @@ const CollapsibleSection: React.FC<{
   );
 };
 
-// Conversation Metrics Component
-const ConversationMetricsSection: React.FC<{
-  chat: TestChat;
-}> = ({ chat }) => {
-  if (!chat?.metrics) return null;
-  
-  const { 
-    correct = 0, 
-    incorrect = 0, 
-    responseTime = [], 
-    validationScores = [],
-    contextRelevance = [] 
-  } = chat.metrics;
-  
-  // Calculate averages
-  const avgResponseTime = responseTime.length 
-    ? responseTime.reduce((sum: number, time: number) => sum + time, 0) / responseTime.length 
-    : 0;
-    
-  const avgValidationScore = validationScores.length 
-    ? validationScores.reduce((sum: number, score: number) => sum + score, 0) / validationScores.length 
-    : 0;
-    
-  const avgContextRelevance = contextRelevance.length 
-    ? contextRelevance.reduce((sum: number, score: number) => sum + score, 0) / contextRelevance.length 
-    : 0;
-
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div className="text-center p-3 bg-background/50 rounded-md">
-        <div className="text-xs text-muted-foreground">Correct Responses</div>
-        <div className="text-lg font-semibold">{correct}</div>
-      </div>
-      <div className="text-center p-3 bg-background/50 rounded-md">
-        <div className="text-xs text-muted-foreground">Avg Response Time</div>
-        <div className="text-lg font-semibold">{Math.round(avgResponseTime)}ms</div>
-      </div>
-      <div className="text-center p-3 bg-background/50 rounded-md">
-        <div className="text-xs text-muted-foreground">Validation Score</div>
-        <div className="text-lg font-semibold">{Math.round(avgValidationScore * 100)}%</div>
-      </div>
-      <div className="text-center p-3 bg-background/50 rounded-md">
-        <div className="text-xs text-muted-foreground">Context Relevance</div>
-        <div className="text-lg font-semibold">{Math.round(avgContextRelevance * 100)}%</div>
-      </div>
-    </div>
-  );
-};
 
 export function TestRunsDashboard() {
   const {
@@ -195,7 +146,7 @@ export function TestRunsDashboard() {
               icon={<BarChart2 className="h-4 w-4" />}
               defaultOpen={false}
             >
-              <ConversationMetricsSection chat={selectedChat} />
+              {/* <ConversationMetricsSection chat={selectedChat} /> */}
             </CollapsibleSection>
             
             <CollapsibleSection 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TestMessage } from "@/types/runs";
@@ -13,7 +13,7 @@ import {
 import { Play, ChevronDown, ChevronUp, BarChart2, FileText } from "lucide-react";
 import { useTestExecution } from "@/hooks/useTestExecution";
 import WarningDialog from "@/components/config/WarningDialog";
-import { ConversationValidationDisplay } from "./ConversationValidationDisplay";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 function CollapsibleJson({ content }: { content: string }) {
   let formattedContent = content;
@@ -25,26 +25,17 @@ function CollapsibleJson({ content }: { content: string }) {
       const parsed = JSON.parse(content);
       formattedContent = JSON.stringify(parsed, null, 2);
       return (
-        <pre className="font-mono text-sm p-4 rounded-[var(--radius)] overflow-x-auto whitespace-pre-wrap max-w-full">
+        <pre className="font-mono text-sm p-4 rounded-xl overflow-x-auto whitespace-pre-wrap max-w-full bg-muted">
           {formattedContent}
         </pre>
       );
     }
-    return (
-      <div className="p-4 whitespace-pre-wrap text-sm max-w-full">
-        {content}
-      </div>
-    );
-  } catch (e) {
-    return (
-      <div className="p-4 whitespace-pre-wrap text-sm max-w-full">
-        {content}
-      </div>
-    );
+    return <div className="p-4 whitespace-pre-wrap text-sm max-w-full">{content}</div>;
+  } catch {
+    return <div className="p-4 whitespace-pre-wrap text-sm max-w-full">{content}</div>;
   }
 }
 
-// Collapsible Section Component
 const CollapsibleSection: React.FC<{
   title: string;
   children: React.ReactNode;
@@ -52,12 +43,11 @@ const CollapsibleSection: React.FC<{
   icon?: React.ReactNode;
 }> = ({ title, children, defaultOpen = false, icon }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
-
   return (
     <div className="border border-border rounded-md overflow-hidden mb-4">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-3 text-sm font-medium bg-background/50 hover:bg-background/80 transition-colors"
+        className="w-full flex items-center justify-between p-4 text-sm font-medium bg-muted hover:bg-muted/80 transition-colors"
       >
         <div className="flex items-center">
           {icon && <span className="mr-2">{icon}</span>}
@@ -69,15 +59,10 @@ const CollapsibleSection: React.FC<{
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         )}
       </button>
-      {isOpen && (
-        <div className="bg-background/30 border-t border-border p-4">
-          {children}
-        </div>
-      )}
+      {isOpen && <div className="bg-background p-4">{children}</div>}
     </div>
   );
 };
-
 
 export function TestRunsDashboard() {
   const {
@@ -88,87 +73,126 @@ export function TestRunsDashboard() {
     setSelectedChat,
     savedAgentConfigs,
     executeTest,
-    error
+    error,
   } = useTestExecution();
 
-  const [showWarningDialog, setShowWarningDialog] = useState(false); // State to control the WarningDialog dialog
-  const [testIdToExecute, setTestIdToExecute] = useState<string | null>(null); // State to store the test ID to execute after API key check
+  const [showWarningDialog, setShowWarningDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState("conversation");
 
   if (selectedChat) {
     return (
-      <div className="p-6 space-y-6 max-w-[1200px] mx-auto">
+      <div className="p-10 space-y-1 max-w-6xl mx-auto">
         <div className="flex items-center justify-between">
           <Button variant="ghost" onClick={() => setSelectedChat(null)}>
             ← Back to Run
           </Button>
         </div>
 
-        <div>
-          <h2 className="text-xl font-semibold">{selectedChat.name}</h2>
-          <p className="text-sm text-muted-foreground">
-            View conversation and responses
-          </p>
-        </div>
-
-        <div className="space-y-6 max-w-[800px] mx-auto">
-          {selectedChat.messages.map((message: TestMessage) => (
-            <div key={message.id} className="space-y-2">
-              {message.role === "user" ? (
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-sm">👤</span>
-                  </div>
-                  <div className="flex-1 overflow-hidden">
-                    <div className="bg-blue-500/20 rounded-[var(--radius)]">
-                      <CollapsibleJson content={message.content} />
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-start gap-3">
-                  <div className="flex-1 overflow-hidden">
-                    <div className="bg-emerald-500/10 rounded-[var(--radius)]">
-                      <CollapsibleJson content={message.content} />
-                    </div>
-                  </div>
-                  <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-sm">🤖</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-          
-          {/* Add collapsible sections */}
-          <div className="mt-6 space-y-4">
-            <CollapsibleSection 
-              title="Conversation Metrics" 
-              icon={<BarChart2 className="h-4 w-4" />}
-              defaultOpen={false}
-            >
-              {/* <ConversationMetricsSection chat={selectedChat} /> */}
-            </CollapsibleSection>
-            
-            <CollapsibleSection 
-              title="Analysis" 
-              icon={<FileText className="h-4 w-4" />}
-              defaultOpen={false}
-            >
-              {selectedChat.validationResult && (
-                <div className="p-3 bg-background/50 rounded-md">
-                  <h4 className="text-sm font-medium mb-2">Test Result:</h4>
-                  <div className={`font-medium ${selectedChat.validationResult.isCorrect ? 'text-green-500' : 'text-red-500'}`}>
-                    {selectedChat.validationResult.isCorrect ? 'Pass' : 'Fail'}
-                  </div>
-                  <h4 className="text-sm font-medium mt-4 mb-2">Analysis:</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedChat.validationResult.explanation}
-                  </p>
-                </div>
-              )}
-            </CollapsibleSection>
+        <div className="space-y-4">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight">Test Results</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              View evaluation results and metrics for your agent tests
+            </p>
           </div>
 
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="bg-background p-1 border rounded-md shadow-sm">
+              <TabsTrigger
+                value="conversation"
+                className="px-4 py-1.5 text-sm rounded-md data-[state=active]:bg-muted data-[state=active]:text-foreground"
+              >
+                Conversation
+              </TabsTrigger>
+              <TabsTrigger
+                value="metrics"
+                className="px-4 py-1.5 text-sm rounded-md data-[state=active]:bg-muted data-[state=active]:text-foreground"
+              >
+                Metrics Breakdown
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="conversation" className="pt-4">
+              <div>
+                <h2 className="text-xl font-semibold">{selectedChat.name}</h2>
+                <p className="text-sm text-muted-foreground">
+                  View conversation and responses
+                </p>
+              </div>
+
+              <div className="space-y-6 max-w-[800px] mx-auto p-4">
+              {selectedChat.messages.map((message: TestMessage) => (
+                <div key={message.id} className="space-y-2">
+                  {message.role === "user" ? (
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[#dbeafe] flex items-center justify-center flex-shrink-0 text-[#2563eb] font-bold">
+                        👤
+                      </div>
+                      <div className="flex-1 overflow-hidden">
+                        <div className="bg-[#eff6ff] text-[#1e3a8a] rounded-2xl px-5 py-4 shadow-sm">
+                          <CollapsibleJson content={message.content} />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1 overflow-hidden">
+                        <div className="bg-[#dcfce7] text-[#14532d] rounded-2xl px-5 py-4 shadow-sm">
+                          <CollapsibleJson content={message.content} />
+                        </div>
+                      </div>
+                      <div className="w-8 h-8 rounded-full bg-[#bbf7d0] flex items-center justify-center flex-shrink-0 text-[#15803d] font-bold">
+                        🤖
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+
+                <div className="mt-6 space-y-4">
+                  <CollapsibleSection
+                    title="Conversation Metrics"
+                    icon={<BarChart2 className="h-4 w-4" />}
+                  >
+                    {/* <ConversationMetricsSection chat={selectedChat} /> */}
+                    Coming soon...
+                  </CollapsibleSection>
+
+                  <CollapsibleSection
+                    title="Analysis"
+                    icon={<FileText className="h-4 w-4" />}
+                    defaultOpen={true}
+                  >
+                    {selectedChat.validationResult && (
+                      <div className="p-3 bg-muted rounded-md">
+                        <h4 className="text-sm font-medium mb-2">Test Result:</h4>
+                        <div
+                          className={`font-medium ${
+                            selectedChat.validationResult.isCorrect
+                              ? "text-green-500"
+                              : "text-red-500"
+                          }`}
+                        >
+                          {selectedChat.validationResult.isCorrect ? "Pass" : "Fail"}
+                        </div>
+                        <h4 className="text-sm font-medium mt-4 mb-2">Analysis:</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {selectedChat.validationResult.explanation}
+                        </p>
+                      </div>
+                    )}
+                  </CollapsibleSection>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="metrics" className="pt-4">
+              <div className="h-64 flex items-center justify-center text-muted-foreground p-4">
+                <p>Metrics breakdown will be implemented soon.</p>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     );
@@ -176,22 +200,20 @@ export function TestRunsDashboard() {
 
   if (selectedRun) {
     return (
-      <div className="p-6 space-y-6">
+      <div className="p-5 space-y-3 max-w-6xl mx-auto">
         {error && (
           <div className="p-4 mb-4 text-red-600 bg-red-100 rounded">
             {error.message}
           </div>
         )}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={() => setSelectedRun(null)}>
-              ← Back to Runs
-            </Button>
-          </div>
+          <Button variant="ghost" onClick={() => setSelectedRun(null)}>
+            ← Back to Runs
+          </Button>
         </div>
 
-        <div className="space-y-1">
-          <h2 className="text-xl font-semibold">Run #{selectedRun.name}</h2>
+        <div>
+          <h2 className="text-2xl font-semibold">Run #{selectedRun.name}</h2>
           <p className="text-sm text-muted-foreground">
             All conversations in this test run
           </p>
@@ -201,34 +223,26 @@ export function TestRunsDashboard() {
           {(selectedRun.chats || []).map((chat) => (
             <div
               key={chat.id}
-              className="flex items-center p-4 bg-background border border-border rounded-[var(--radius)] cursor-pointer hover:bg-background/30"
+              className="flex items-center justify-between p-4 bg-background border border-border rounded-xl cursor-pointer hover:bg-muted"
               onClick={() => setSelectedChat(chat)}
             >
-              <div className="w-[60%] truncate">
-                <div className="font-medium">
-                  {chat.scenarioName ?? "Unknown Scenario"}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {chat.personaName ?? "Unknown Persona"}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {chat.messages.length} messages
-                </p>
+              <div className="flex-1">
+                <div className="font-medium truncate">{chat.scenarioName ?? "Unknown Scenario"}</div>
+                <div className="text-sm text-muted-foreground">{chat.personaName ?? "Unknown Persona"}</div>
+                <div className="text-sm text-muted-foreground">{chat.messages.length} messages</div>
               </div>
-
-              <div className="w-[40%] flex items-center justify-end gap-4">
+              <div className="flex items-center gap-3">
                 <Badge
                   variant={
-                    chat.status === "passed" 
-                      ? "outline" 
-                      : chat.status === "failed" 
-                      ? "destructive" 
+                    chat.status === "passed"
+                      ? "outline"
+                      : chat.status === "failed"
+                      ? "destructive"
                       : "secondary"
                   }
                 >
                   {chat.status}
                 </Badge>
-                <span className="text-muted-foreground">→</span>
               </div>
             </div>
           ))}
@@ -238,27 +252,24 @@ export function TestRunsDashboard() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-10 space-y-6 max-w-6xl mx-auto">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-xl font-semibold">Test Runs</h2>
-          <p className="text-sm text-muted-foreground">
-            History of all test executions
-          </p>
+          <h2 className="text-2xl font-semibold">Test Runs</h2>
+          <p className="text-sm text-muted-foreground">History of all test executions</p>
         </div>
-
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button>
               <Play className="w-4 h-4 mr-2" />
               Run Test
-              <ChevronDown className="w-4 h-4 ml-2" />
+              <ChevronDown className="w- h-4 ml-2" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="cursor-pointer">
             {savedAgentConfigs.length > 0 ? (
               savedAgentConfigs.map((test) => (
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   key={test.id}
                   onSelect={() => executeTest(test.id)}
                   className="cursor-pointer"
@@ -277,35 +288,19 @@ export function TestRunsDashboard() {
         {runs.map((run) => (
           <div
             key={run.id}
-            className="flex items-center p-4 bg-background border border-border rounded-[var(--radius)] cursor-pointer hover:bg-background/30"
+            className="flex items-center justify-between p-4 bg-background border border-border rounded-xl cursor-pointer hover:bg-muted"
             onClick={() => setSelectedRun(run)}
           >
-            <div className="w-[30%] flex items-center gap-2">
-              <span className="font-medium">{run.name}</span>
-              <span className="text-muted-foreground text-sm">
+            <div className="flex-1">
+              <div className="font-medium">{run.name}</div>
+              <div className="text-sm text-muted-foreground">
                 {new Date(run.timestamp).toLocaleString()}
-              </span>
-            </div>
-
-            <div className="w-[50%] flex items-center gap-4">
-              <span className="text-muted-foreground">
-                Tests: {run.metrics.total || 0}
-              </span>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1">
-                  <span className="text-green-500">✓</span>
-                  <span>{run.metrics.passed}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-red-500">✗</span>
-                  <span>{run.metrics.failed}</span>
-                </div>
               </div>
             </div>
-
-            <div className="w-[20%] flex items-center justify-end gap-2">
+            <div className="flex items-center gap-4">
+              <div className="text-green-600 font-semibold">✓ {run.metrics.passed}</div>
+              <div className="text-red-500 font-semibold">✗ {run.metrics.failed}</div>
               <Badge>{run.status}</Badge>
-              <span className="text-muted-foreground">→</span>
             </div>
           </div>
         ))}
@@ -316,6 +311,7 @@ export function TestRunsDashboard() {
           </div>
         )}
       </div>
+
       {showWarningDialog && (
         <WarningDialog
           isOpen={showWarningDialog}

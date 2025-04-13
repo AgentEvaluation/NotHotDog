@@ -4,17 +4,17 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TestMessage } from "@/types/runs";
+import { TestChat } from "@/types/chat";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Play, ChevronDown } from "lucide-react";
+import { Play, ChevronDown, ChevronUp, BarChart2, FileText } from "lucide-react";
 import { useTestExecution } from "@/hooks/useTestExecution";
 import WarningDialog from "@/components/config/WarningDialog";
 import { ConversationValidationDisplay } from "./ConversationValidationDisplay";
-
 
 function CollapsibleJson({ content }: { content: string }) {
   let formattedContent = content;
@@ -44,6 +44,89 @@ function CollapsibleJson({ content }: { content: string }) {
     );
   }
 }
+
+// Collapsible Section Component
+const CollapsibleSection: React.FC<{
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+  icon?: React.ReactNode;
+}> = ({ title, children, defaultOpen = false, icon }) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <div className="border border-border rounded-md overflow-hidden mb-4">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between p-3 text-sm font-medium bg-background/50 hover:bg-background/80 transition-colors"
+      >
+        <div className="flex items-center">
+          {icon && <span className="mr-2">{icon}</span>}
+          <span>{title}</span>
+        </div>
+        {isOpen ? (
+          <ChevronUp className="h-4 w-4 text-muted-foreground" />
+        ) : (
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+        )}
+      </button>
+      {isOpen && (
+        <div className="bg-background/30 border-t border-border p-4">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Conversation Metrics Component
+const ConversationMetricsSection: React.FC<{
+  chat: TestChat;
+}> = ({ chat }) => {
+  if (!chat?.metrics) return null;
+  
+  const { 
+    correct = 0, 
+    incorrect = 0, 
+    responseTime = [], 
+    validationScores = [],
+    contextRelevance = [] 
+  } = chat.metrics;
+  
+  // Calculate averages
+  const avgResponseTime = responseTime.length 
+    ? responseTime.reduce((sum: number, time: number) => sum + time, 0) / responseTime.length 
+    : 0;
+    
+  const avgValidationScore = validationScores.length 
+    ? validationScores.reduce((sum: number, score: number) => sum + score, 0) / validationScores.length 
+    : 0;
+    
+  const avgContextRelevance = contextRelevance.length 
+    ? contextRelevance.reduce((sum: number, score: number) => sum + score, 0) / contextRelevance.length 
+    : 0;
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="text-center p-3 bg-background/50 rounded-md">
+        <div className="text-xs text-muted-foreground">Correct Responses</div>
+        <div className="text-lg font-semibold">{correct}</div>
+      </div>
+      <div className="text-center p-3 bg-background/50 rounded-md">
+        <div className="text-xs text-muted-foreground">Avg Response Time</div>
+        <div className="text-lg font-semibold">{Math.round(avgResponseTime)}ms</div>
+      </div>
+      <div className="text-center p-3 bg-background/50 rounded-md">
+        <div className="text-xs text-muted-foreground">Validation Score</div>
+        <div className="text-lg font-semibold">{Math.round(avgValidationScore * 100)}%</div>
+      </div>
+      <div className="text-center p-3 bg-background/50 rounded-md">
+        <div className="text-xs text-muted-foreground">Context Relevance</div>
+        <div className="text-lg font-semibold">{Math.round(avgContextRelevance * 100)}%</div>
+      </div>
+    </div>
+  );
+};
 
 export function TestRunsDashboard() {
   const {
@@ -104,9 +187,36 @@ export function TestRunsDashboard() {
               )}
             </div>
           ))}
-          {selectedChat.validationResult && (
-            <ConversationValidationDisplay validationResult={selectedChat.validationResult} />
-          )}
+          
+          {/* Add collapsible sections */}
+          <div className="mt-6 space-y-4">
+            <CollapsibleSection 
+              title="Conversation Metrics" 
+              icon={<BarChart2 className="h-4 w-4" />}
+              defaultOpen={false}
+            >
+              <ConversationMetricsSection chat={selectedChat} />
+            </CollapsibleSection>
+            
+            <CollapsibleSection 
+              title="Analysis" 
+              icon={<FileText className="h-4 w-4" />}
+              defaultOpen={false}
+            >
+              {selectedChat.validationResult && (
+                <div className="p-3 bg-background/50 rounded-md">
+                  <h4 className="text-sm font-medium mb-2">Test Result:</h4>
+                  <div className={`font-medium ${selectedChat.validationResult.isCorrect ? 'text-green-500' : 'text-red-500'}`}>
+                    {selectedChat.validationResult.isCorrect ? 'Pass' : 'Fail'}
+                  </div>
+                  <h4 className="text-sm font-medium mt-4 mb-2">Analysis:</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedChat.validationResult.explanation}
+                  </p>
+                </div>
+              )}
+            </CollapsibleSection>
+          </div>
 
         </div>
       </div>
@@ -167,10 +277,6 @@ export function TestRunsDashboard() {
                 >
                   {chat.status}
                 </Badge>
-                <span className="text-muted-foreground">→</span>
-              </div>
-
-              <div className="w-[40%] flex items-center justify-end">
                 <span className="text-muted-foreground">→</span>
               </div>
             </div>

@@ -63,6 +63,13 @@ export interface TestChat {
       containsFailures?: string[];
       notContainsFailures?: string[];
     };
+    metricResults?: Array<{
+      id: string;
+      name: string;
+      score: number;
+      reason: string;
+    }>;
+
   };
   error?: string | null;
   timestamp: string;

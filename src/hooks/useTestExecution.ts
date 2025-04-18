@@ -37,6 +37,7 @@ export function useTestExecution() {
   }, []);
 
   const executeTest = async (testId: string) => {
+    console.log("came inside");
     setStatus('connecting');
     setError(null);
 
@@ -48,6 +49,7 @@ export function useTestExecution() {
       setError({ message: "Anthropic API key or model is missing. Please configure them." });
       return;
     }
+    console.log("came inside");
 
     try {
       const response = await fetch('/api/tools/test-runs', {

@@ -134,15 +134,17 @@ export async function POST(request: Request) {
           );
 
           const chatId = uuidv4();
+          const agentMetrics = await dbService.getMetricsForAgent(testId);
           
           const conversationValidation = await agent.validateFullConversation(
             result.conversation.allMessages
               .map(m => `${m.role === 'user' ? 'Human' : 'Assistant'}: ${m.content}`)
               .join('\n\n'),
             scenario.scenario,
-            scenario.expectedOutput || ''
+            scenario.expectedOutput || '',
+            agentMetrics
           );
-          
+
           const chat: TestChat = {
             id: chatId,
             scenarioName: scenario.scenario,
@@ -161,7 +163,8 @@ export async function POST(request: Request) {
                 customFailure: !conversationValidation.isCorrect,
                 containsFailures: [],
                 notContainsFailures: []
-              }
+              },
+              metricResults: conversationValidation.metrics || []
             },
             timestamp: new Date().toISOString(),
             personaId: personaId,
@@ -188,15 +191,11 @@ export async function POST(request: Request) {
             messages: [],
             metrics: {
               correct: 0,
-              incorrect: 1,
+              incorrect: 0,
               responseTime: [],
               validationScores: [],
               contextRelevance: [],
-              validationDetails: {
-                customFailure: true,
-                containsFailures: [],
-                notContainsFailures: []
-              }
+              metricResults: []
             },
             timestamp: new Date().toISOString(),
             error: error.message || 'Unknown error occurred',
@@ -215,6 +214,17 @@ export async function POST(request: Request) {
     
     // Save the test run to the database
     await dbService.createTestRun(testRun);
+
+    for (const chat of completedChats) {
+      const metricResults = chat.metrics.metricResults ?? [];
+      if (metricResults.length > 0) {
+        await dbService.saveMetricResults(
+          testRun.id,
+          chat.id,
+          metricResults
+        );
+      }
+    }
 
     return NextResponse.json(testRun);
   } catch (error: any) { // Type error as any

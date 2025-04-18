@@ -14,6 +14,7 @@ import { Play, ChevronDown, ChevronUp, BarChart2, FileText } from "lucide-react"
 import { useTestExecution } from "@/hooks/useTestExecution";
 import WarningDialog from "@/components/config/WarningDialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { MetricType, Criticality } from "@/types/metrics";
 
 function CollapsibleJson({ content }: { content: string }) {
   let formattedContent = content;
@@ -78,10 +79,18 @@ export function TestRunsDashboard() {
 
   const [showWarningDialog, setShowWarningDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("conversation");
+  const [metricFilter, setMetricFilter] = useState<"All"|"Binary"|"Numerical"|"Critical Only">("All");
+  // const filteredMetrics = (selectedChat?.metrics.metricResults || []).filter(m => {
+  //   if (metricFilter === "All") return true;
+  //   if (metricFilter === "Binary") return m.type?.toLowerCase().includes("binary");
+  //   if (metricFilter === "Numerical") return m.type?.toLowerCase().includes("numeric");
+  //   if (metricFilter === "Critical Only") return m.criticality?.toLowerCase() === "high";
+  //   return false;
+  // });
 
   if (selectedChat) {
     return (
-      <div className="p-10 space-y-1 max-w-6xl mx-auto">
+      <div className="p-5 space-y-3 max-w-6xl mx-auto">
         <div className="flex items-center justify-between">
           <Button variant="ghost" onClick={() => setSelectedChat(null)}>
             ← Back to Run
@@ -119,7 +128,6 @@ export function TestRunsDashboard() {
                   View conversation and responses
                 </p>
               </div>
-
               <div className="space-y-6 max-w-[800px] mx-auto p-4">
               {selectedChat.messages.map((message: TestMessage) => (
                 <div key={message.id} className="space-y-2">
@@ -188,9 +196,91 @@ export function TestRunsDashboard() {
             </TabsContent>
 
             <TabsContent value="metrics" className="pt-4">
-              <div className="h-64 flex items-center justify-center text-muted-foreground p-4">
-                <p>Metrics breakdown will be implemented soon.</p>
-              </div>
+            {(() => {
+              console.log("Selected Chat:", selectedChat);
+              console.log("Metrics:", selectedChat?.metrics);
+              return null; // Return null so nothing renders
+            })()}
+
+              {selectedChat?.metrics.metricResults && selectedChat.metrics.metricResults.length > 0 ? (
+                <>
+                  {/* filter buttons */}
+                  <div className="flex gap-2 mb-4">
+                    {["All", "Binary", "Numerical", "Critical Only"].map(f => (
+                      <Button
+                        key={f}
+                        size="sm"
+                        variant={metricFilter === f ? "outline" : "ghost"}
+                        onClick={() => setMetricFilter(f as any)}
+                      >
+                        {f}
+                      </Button>
+                    ))}
+                  </div>
+
+                  {/* metrics table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full table-auto border-collapse">
+                      <thead>
+                        <tr className="bg-muted">
+                          <th className="p-3 text-left">Metric</th>
+                          <th className="p-3 text-left">Type</th>
+                          <th className="p-3 text-left">Criticality</th>
+                          <th className="p-3 text-left">Result</th>
+                          <th className="p-3 text-right">Score</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedChat.metrics.metricResults
+                          .filter(m => {
+                            // Apply filter based on the metric filter selection
+                            if (metricFilter === "All") return true;
+                            // Add simple string matching for the other filters since we might not have the complete data
+                            if (metricFilter === "Binary") return true; // Show all metrics for now, adjust as needed
+                            if (metricFilter === "Numerical") return m.name.toLowerCase().includes("time");
+                            if (metricFilter === "Critical Only") return m.name.toLowerCase().includes("hallucination");
+                            return false;
+                          })
+                          .map(m => (
+                            <tr key={m.id} className="border-t">
+                              <td className="p-3">
+                                <div className="font-medium">{m.name}</div>
+                                <div className="text-sm text-muted-foreground">{m.reason}</div>
+                              </td>
+                              <td className="p-3">
+                                {/* Infer type from name if not available */}
+                                {m.name.toLowerCase().includes("time") ? "Numerical" : 
+                                m.name.toLowerCase().includes("flow") ? "Binary Workflow" : 
+                                "Binary Qualitative"}
+                              </td>
+                              <td className="p-3">
+                                <Badge 
+                                  variant={m.name.toLowerCase().includes("hallucination") ? "destructive" : "outline"}
+                                >
+                                  {m.name.toLowerCase().includes("hallucination") ? "High" : "Medium"}
+                                </Badge>
+                              </td>
+                              <td className="p-3">
+                                <Badge 
+                                  variant="outline" 
+                                  className={m.score === 1 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
+                                >
+                                  {m.score === 1 ? "PASSED" : "FAILED"}
+                                </Badge>
+                              </td>
+                              <td className="p-3 text-right">{(m.score * 100).toFixed(0)}%</td>
+                            </tr>
+                          ))
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              ) : (
+                <div className="h-64 flex items-center justify-center text-muted-foreground p-4">
+                  <p>No custom metrics data available for this conversation.</p>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </div>

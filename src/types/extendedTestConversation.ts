@@ -18,5 +18,17 @@ export interface ExtendedTestConversation {
       validation_score: number | null;
       metrics: unknown;
     }[];
+    test_run_metrics?: {
+        id: string;
+        metric_id: string;
+        score: number;
+        reason: string | null;
+        metrics: {
+          id: string;
+          name: string;
+          type: string;
+          check_criteria: string;
+        }
+      }[];
   }
   

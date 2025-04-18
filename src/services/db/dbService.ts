@@ -653,12 +653,17 @@ export class DbService {
               conversation_messages: true,
               test_scenarios: true,
               personas: true, 
+              test_run_metrics: {
+                include: {
+                  metrics: true
+                }
+              }
             },
           },
         },
         orderBy: { created_at: 'desc' },
       });
-      
+
       return runs.map(run => ({
         id: run.id,
         name: run.name,
@@ -700,7 +705,14 @@ export class DbService {
               incorrect: 0,
               responseTime: [],
               validationScores: [],
-              contextRelevance: []
+              contextRelevance: [],
+              metricResults: conversation.test_run_metrics?.map(trm => ({
+                id: trm.id,
+                name: trm.metrics?.name || '',
+                type: trm.metrics?.type || '',
+                score: trm.score,
+                reason: trm.reason || ''
+              })) || []
             },
             timestamp: conversation.created_at ? conversation.created_at.toISOString() : new Date().toISOString(),
             personaId: "",
@@ -896,31 +908,39 @@ export class DbService {
       throw new Error("Failed to delete metric");
     }
   }
-
-  // async createAgentMetricMappings(metricId: string, agentIds: string[]) {
-  //   try {
-  //     // Remove any existing mappings first
-  //     await prisma.agent_metrics.deleteMany({
-  //       where: { metric_id: metricId }
-  //     });
+  async getMetricsForAgent(agentId: string) {
+    try {
+      return await prisma.metrics.findMany({
+        where: {
+          agent_metrics: {
+            some: { agent_id: agentId, enabled: true }
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching metrics for agent:", error);
+      return [];
+    }
+  }
+  
+  // Also add method to save metric results
+  async saveMetricResults(testRunId: string, conversationId: string, metricResults: Array<{id: string, score: number, reason: string}>) {
+    try {
+      const operations = metricResults.map(result => ({
+        run_id: testRunId,
+        conversation_id: conversationId,
+        metric_id: result.id,
+        score: result.score,
+        reason: result.reason
+      }));
       
-  //     // Create new mappings
-  //     if (agentIds.length > 0) {
-  //       await prisma.agent_metrics.createMany({
-  //         data: agentIds.map(agentId => ({
-  //           metric_id: metricId,
-  //           agent_id: agentId,
-  //           enabled: true
-  //         }))
-  //       });
-  //     }
-      
-  //     return true;
-  //   } catch (error) {
-  //     console.error("Error creating agent metric mappings:", error);
-  //     throw error;
-  //   }
-  // }
+      return await prisma.test_run_metrics.createMany({
+        data: operations
+      });
+    } catch (error) {
+      console.error("Error saving metric results:", error);
+    }
+  }
 }
 
 export const dbService = DbService.getInstance();

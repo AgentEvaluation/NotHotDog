@@ -128,7 +128,6 @@ export function TestRunsDashboard() {
                   View conversation and responses
                 </p>
               </div>
-
               <div className="space-y-6 max-w-[800px] mx-auto p-4">
               {selectedChat.messages.map((message: TestMessage) => (
                 <div key={message.id} className="space-y-2">
@@ -283,7 +282,6 @@ export function TestRunsDashboard() {
                 </div>
               )}
             </TabsContent>
-
           </Tabs>
         </div>
       </div>

@@ -14,6 +14,7 @@ interface PersonaDialogProps {
   title: string;
   buttonText: string;
   children: ReactNode;
+  isSaving?: boolean;
 }
 
 export function PersonaDialog({
@@ -26,6 +27,7 @@ export function PersonaDialog({
   title,
   buttonText,
   children,
+  isSaving = false,
 }: PersonaDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -41,10 +43,19 @@ export function PersonaDialog({
         <PersonaDialogForm persona={persona} setPersona={setPersona} />
         
         <DialogFooter>
-          <Button variant="outline" onClick={onCancel}>
+          <Button variant="outline" onClick={onCancel} disabled={isSaving}>
             Cancel
           </Button>
-          <Button onClick={onSave}>{buttonText}</Button>
+          <Button onClick={onSave} disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent"></span>
+                {buttonText}
+              </>
+            ) : (
+              buttonText
+            )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

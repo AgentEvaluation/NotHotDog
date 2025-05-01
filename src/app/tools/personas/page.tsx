@@ -170,6 +170,7 @@ export default function PersonasScreen() {
           onCancel={() => setIsNewPersonaDialogOpen(false)}
           title="Create New Persona"
           buttonText="Create Persona"
+          isSaving={loading}
         >
           <Button onClick={() => setIsNewPersonaDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />

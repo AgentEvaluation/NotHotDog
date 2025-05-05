@@ -30,11 +30,9 @@ export async function GET(request: Request) {
       return NextResponse.json(config);
     }
 
-
-    
     const configs = await dbService.getAgentConfigs(userId);
-    const lightConfigs = configs.map((cfg: any) => ({ id: cfg.id, name: cfg.name }));
-    return NextResponse.json(lightConfigs);
+    // const lightConfigs = configs.map((cfg: any) => ({ id: cfg.id, name: cfg.name }));
+    return NextResponse.json(configs);
     
   } catch (error) {
     console.error('Error fetching agent configs:', error);

@@ -308,8 +308,8 @@ export function TestCaseVariations({
 
       <CardContent className="space-y-4">
         {generatedCases.map((testCase) => (
-          <div key={testCase.id}>
-            <div className="flex items-center">
+          <div key={testCase.id} className="w-full">
+            <div className="flex items-center w-full">
               <input
                 type="checkbox"
                 checked={selectedIds.includes(testCase.id)}
@@ -317,7 +317,7 @@ export function TestCaseVariations({
                 className="mr-2"
               />
               {editingId === testCase.id ? (
-                <Card className="bg-card text-card-foreground border border-border p-4 flex-1 rounded-md shadow-sm">
+                <Card className="bg-card text-card-foreground border border-border p-4 flex-1 rounded-md shadow-sm w-full">
                   <CardContent className="pt-4 space-y-4 flex-1">
                     <div>
                       <label className="text-xs font-medium text-muted-foreground">
@@ -332,7 +332,7 @@ export function TestCaseVariations({
                           }))
                         }
                         placeholder="Describe the test scenario in plain English..."
-                        className="mt-1 w-full resize-y rounded-md border border-input bg-card text-foreground px-2 py-1 text-sm"
+                        className="mt-1 w-full resize-y rounded-md border border-input bg-card text-foreground px-2 py-1 text-sm w-full"
                         />
                     </div>
                     <div>
@@ -370,7 +370,7 @@ export function TestCaseVariations({
                   </CardContent>
                 </Card>
               ) : (
-                <Card className="bg-card text-card-foreground border border-border rounded-md shadow-sm">
+                <Card className="bg-card text-card-foreground border border-border rounded-md shadow-sm w-full">
                   <CardContent className="pt-4">
                     <div className="flex justify-between items-start">
                       <div className="flex-1 space-y-4">

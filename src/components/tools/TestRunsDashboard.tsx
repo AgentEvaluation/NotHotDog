@@ -313,15 +313,15 @@ export function TestRunsDashboard() {
           {(selectedRun.chats || []).map((chat) => (
             <div
               key={chat.id}
-              className="flex items-center justify-between p-4 bg-background border border-border rounded-xl cursor-pointer hover:bg-muted"
+              className="flex items-center justify-between p-4 bg-background border border-border rounded-xl cursor-pointer hover:bg-muted overflow-hidden"
               onClick={() => setSelectedChat(chat)}
             >
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <div className="font-medium truncate">{chat.scenarioName ?? "Unknown Scenario"}</div>
-                <div className="text-sm text-muted-foreground">{chat.personaName ?? "Unknown Persona"}</div>
+                <div className="text-sm text-muted-foreground truncate">{chat.personaName ?? "Unknown Persona"}</div>
                 <div className="text-sm text-muted-foreground">{chat.messages.length} messages</div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex-shrink-0 flex items-center gap-3">
                 <Badge
                   variant={
                     chat.status === "passed"

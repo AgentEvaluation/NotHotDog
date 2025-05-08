@@ -229,6 +229,7 @@ model test_scenarios {
   input              String
   expected_output    String
   category           String?
+  enabled            Boolean              @default(true)
   created_at         DateTime?            @default(now()) @db.Timestamptz(6)
   updated_at         DateTime?            @default(now()) @db.Timestamptz(6)
   test_conversations test_conversations[]

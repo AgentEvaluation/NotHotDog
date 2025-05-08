@@ -31,6 +31,20 @@ export async function POST(request: Request) {
   
   export async function PUT(request: Request) {
     try {
+      const url = new URL(request.url);
+      const action = url.searchParams.get('action');
+      
+      // Handle toggle-enabled action
+      if (action === 'toggleEnabled') {
+        const { scenarioId, enabled } = await request.json();
+        if (!scenarioId) {
+          return NextResponse.json({ error: 'Scenario ID is required' }, { status: 400 });
+        }
+        const result = await dbService.updateScenarioEnabled(scenarioId, enabled);
+        return NextResponse.json({ success: true, scenario: result });
+      }
+      
+      // Handle normal variation update
       const { variation } = await request.json();
       const result = await dbService.updateTestVariation(variation);
       return NextResponse.json(result);

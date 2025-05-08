@@ -82,7 +82,8 @@ export async function POST(request: Request) {
     
     const scenarios = testVariations.testCases;
     const selectedPersonas = personaMapping.personaIds || [];
-    const totalRuns = scenarios.length * selectedPersonas.length;
+    const enabledScenarios = scenarios.filter(scenario => scenario.enabled !== false);
+    const totalRuns = enabledScenarios.length * selectedPersonas.length;
 
     // Create new test run
     const testRun: TestRun = {
@@ -123,7 +124,7 @@ export async function POST(request: Request) {
       {};
 
     // Run the tests
-    for (const scenario of scenarios) {
+    for (const scenario of enabledScenarios) {
       for (const personaId of selectedPersonas) {
         try {
           const agent = new QaAgent({

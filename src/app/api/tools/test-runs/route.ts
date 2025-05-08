@@ -6,6 +6,7 @@ import { QaAgent } from '@/services/agents/claude/qaAgent';
 import { TestRun } from '@/types/runs';
 import { TestChat } from '@/types/chat';
 import { Rule } from '@/services/agents/claude/types';
+import { LLMProvider } from '@/services/llm/enums';
 
 
 export async function GET(request: Request) {
@@ -39,10 +40,22 @@ export async function POST(request: Request) {
     }
 
     const apiKey = request.headers.get("x-api-key");
-    const modelFromHeader = request.headers.get("x-model") || "";
+    const modelId = request.headers.get("x-model") || "";
+    const provider = request.headers.get("x-provider") || LLMProvider.Anthropic;
+    const extraParamsStr = request.headers.get("x-extra-params");
+    
+    let extraParams = {};
+    if (extraParamsStr) {
+      try {
+        extraParams = JSON.parse(extraParamsStr);
+      } catch (e) {
+        console.error("Failed to parse extra params", e);
+      }
+    }
+    
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'Anthropic API key is missing on the server.' },
+        { error: 'API key is missing. Please configure in settings.' },
         { status: 500 }
       );
     }
@@ -115,7 +128,8 @@ export async function POST(request: Request) {
         try {
           const agent = new QaAgent({
             headers: testConfig.headers,
-            modelId: modelFromHeader,
+            modelId,
+            provider,
             endpointUrl: testConfig.endpoint,
             apiConfig: {
               inputFormat: inputFormat,
@@ -125,7 +139,8 @@ export async function POST(request: Request) {
               rules: formattedRules
             },
             persona: personaId,
-            userApiKey: apiKey
+            userApiKey: apiKey,
+            extraParams
           });
 
           const result = await agent.runTest(

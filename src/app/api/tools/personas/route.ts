@@ -3,6 +3,8 @@ import { dbService } from "@/services/db/dbService";
 import { auth } from "@clerk/nextjs/server";
 import { mapToUIPersona } from "@/lib/utils";
 import { generateSystemPromptForPersona } from "@/services/persona";
+import { ModelFactory } from "@/services/llm/modelfactory";
+import { LLMProvider } from "@/services/llm/enums";
 
 export async function GET() {
   const { userId } = await auth();
@@ -43,7 +45,7 @@ export async function POST(request: Request) {
 
     const personaData = await request.json();
     
-    if (!personaData.name || !personaData.temperature === undefined || 
+    if (!personaData.name || personaData.temperature === undefined || 
         !personaData.messageLength || !personaData.primaryIntent ||
         !personaData.communicationStyle) {
       return NextResponse.json({ error: "Missing required persona fields" }, { status: 400 });
@@ -54,17 +56,47 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "API key required to generate system prompt" }, { status: 400 });
     }
     
-    // Generate system prompt
-    const systemPrompt = await generateSystemPromptForPersona(personaData, apiKey);
+    const modelId = request.headers.get("x-model") || "";
+    const providerStr = request.headers.get("x-provider") || "";
+    const extraParamsStr = request.headers.get("x-extra-params");
     
+    // Convert provider string to LLMProvider enum
+    const provider = (providerStr as LLMProvider) || LLMProvider.Anthropic;
     
-    const newPersona = await dbService.createPersona({
-      ...personaData,
-      org_id: profile.org_id,
-      systemPrompt
-    });
+    let extraParams = {};
+    if (extraParamsStr) {
+      try {
+        extraParams = JSON.parse(extraParamsStr);
+      } catch (e) {
+        console.error("Failed to parse extra params", e);
+      }
+    }
     
-    return NextResponse.json(newPersona, { status: 201 });
+    const modelConfig = {
+      id: modelId,
+      provider,
+      name: "Model from headers",
+      apiKey,
+      keyName: "From headers",
+      extraParams
+    };
+    
+    try {
+      const systemPrompt = await generateSystemPromptForPersona(personaData, modelConfig);
+      
+      const newPersona = await dbService.createPersona({
+        ...personaData,
+        org_id: profile.org_id,
+        systemPrompt
+      });
+      
+      return NextResponse.json(newPersona, { status: 201 });
+    } catch (error) {
+      console.error("Error generating system prompt:", error);
+      return NextResponse.json({ 
+        error: "Failed to generate system prompt. Please check your API key and model configuration." 
+      }, { status: 500 });
+    }
   } catch (error) {
     console.error("Error creating persona:", error);
     return NextResponse.json({ error: "Failed to create persona" }, { status: 500 });
@@ -97,24 +129,5 @@ export async function PUT(
   } catch (error) {
     console.error("Error updating persona:", error);
     return NextResponse.json({ error: "Failed to update persona" }, { status: 500 });
-  }
-}
-
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
-  const { userId } = await auth();
-  
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  try {
-    await dbService.deletePersona(params.id);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error deleting persona:", error);
-    return NextResponse.json({ error: "Failed to delete persona" }, { status: 500 });
   }
 }

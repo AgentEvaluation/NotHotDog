@@ -1,10 +1,11 @@
 import { ModelFactory } from "@/services/llm/modelfactory";
 import { AnthropicModel } from "@/services/llm/enums";
 import { Persona } from "@/types";
+import { LLMServiceConfig } from "../llm/types";
 
 export async function generateSystemPromptForPersona(
   persona: Persona, 
-  userApiKey: string
+  modelConfig: LLMServiceConfig
 ): Promise<string> {
   const prompt = `Based on the following persona details, generate a detailed system prompt for an AI agent that fully reflects the persona's characteristics, tone, and behavior.
 Persona Name: ${persona.name}
@@ -22,8 +23,9 @@ Message Length: ${persona.messageLength}
 Return ONLY the generated system prompt text without any extra commentary.`;
 
   const model = ModelFactory.createLangchainModel(
-    AnthropicModel.Sonnet3_5, 
-    userApiKey
+    modelConfig.id,
+    modelConfig.apiKey,
+    modelConfig.extraParams
   );
   
   const result = await model.invoke([{ role: "user", content: prompt }]);

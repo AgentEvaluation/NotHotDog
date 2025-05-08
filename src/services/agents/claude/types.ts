@@ -16,11 +16,13 @@ export interface Rule {
   
   export interface QaAgentConfig {
     modelId: string;
+    provider: string;
     headers: Record<string, string>;
     endpointUrl: string;
     apiConfig: ApiConfig;
     persona?: string;
-    userApiKey: string
+    userApiKey: string;
+    extraParams?: Record<string, any>;
   }
   
 

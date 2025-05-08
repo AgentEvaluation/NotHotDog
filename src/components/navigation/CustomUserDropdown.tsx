@@ -26,7 +26,7 @@ export default function CustomUserDropdown() {
                 <Sun className="h-4 w-4" />
               ) : (
                 <Moon className="h-4 w-4" />
-              ) // Conditionally render Sun or Moon
+              )
             }
             onClick={() => setTheme(theme === "light" ? "dark" : "light")}
           />
@@ -35,8 +35,8 @@ export default function CustomUserDropdown() {
 
       {/* API Key Config Modal */}
       <ApiKeyConfig
-        // isOpen={isApiKeyModalOpen}
-        // setIsOpen={setIsApiKeyModalOpen}
+        isOpen={isApiKeyModalOpen}
+        setIsOpen={setIsApiKeyModalOpen}
       />
     </>
   );

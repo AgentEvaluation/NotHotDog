@@ -9,6 +9,7 @@ import { useTestVariations } from "@/hooks/useTestVariations";
 import { TestVariation } from "@/types/variations";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import ScenarioFileUpload from "./ScenarioFileUpload";
+import { ModelFactory } from "@/services/llm/modelfactory";
 
 interface TestCase {
   id: string;
@@ -60,11 +61,12 @@ export function TestCaseVariations({
       return;
     }
 
-    let apiKey = localStorage.getItem("anthropic_api_key");
-    if (!apiKey) {
+    let modelConfig = ModelFactory.getSelectedModelConfig();
+    if (!modelConfig) {
       setShowApiKeyWarning(true);
       return;
     }
+
     setLoading(true);
 
     try {
@@ -72,7 +74,10 @@ export function TestCaseVariations({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-API-Key": apiKey || "",
+          "X-API-Key": modelConfig.apiKey || "",
+          "X-Model": modelConfig.id || "",
+          "X-Provider": modelConfig.provider || "",
+          ...(modelConfig.extraParams ? { "X-Extra-Params": JSON.stringify(modelConfig.extraParams) } : {})
         },
         body: JSON.stringify({ testId: selectedTestId }),
       });

@@ -90,8 +90,35 @@ export function useTestVariations(testId?: string) {
     }
   };
   
+  const toggleScenarioEnabled = async (testId: string, scenarioId: string, enabled: boolean) => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/tools/test-variations?action=toggleEnabled', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scenarioId, enabled }),
+      });
+      
+      if (!response.ok) throw new Error('Failed to update scenario status');
+      const data = await response.json();
+      
+      if (variationData) {
+        setVariationData({
+          ...variationData,
+          testCases: variationData.testCases.map(tc => 
+            tc.id === scenarioId ? { ...tc, enabled } : tc
+          )
+        });
+      }
+      
+      return data;
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to toggle scenario'));
+    } finally {
+      setLoading(false);
+    }
+  };
   
-
   return {
     variations,
     loading,
@@ -100,6 +127,7 @@ export function useTestVariations(testId?: string) {
     updateVariation,
     variationData,
     deleteVariation,
-    setLoading
+    setLoading,
+    toggleScenarioEnabled
   };
 }

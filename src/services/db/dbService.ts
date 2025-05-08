@@ -299,7 +299,8 @@ export class DbService {
       const testCases = scenarios.map(scenario => ({
         id: scenario.id,
         scenario: scenario.name,
-        expectedOutput: scenario.expected_output
+        expectedOutput: scenario.expected_output,
+        enabled: scenario.enabled
       }));
   
       return { testId, testCases };
@@ -347,6 +348,18 @@ export class DbService {
     } catch (error) {
       console.error("Database error in updateTestVariation:", error);
       throw new Error("Failed to update test variation");
+    }
+  }
+
+  async updateScenarioEnabled(scenarioId: string, enabled: boolean) {
+    try {
+      return await prisma.test_scenarios.update({
+        where: { id: scenarioId },
+        data: { enabled }
+      });
+    } catch (error) {
+      console.error("Database error in updateScenarioEnabled:", error);
+      throw new Error("Failed to update scenario status");
     }
   }
   

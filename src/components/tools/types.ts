@@ -1,9 +1,11 @@
-export interface TestCase {
-    input: any
-    expectedOutput: any
-    description: string
-    category?: string
+  export interface TestCase {
+    id: string;
+    sourceTestId: string;
+    scenario: string;
+    expectedOutput: string;
+    enabled?: boolean;
   }
+
   
   export interface EvaluationResult {
     testCase: TestCase

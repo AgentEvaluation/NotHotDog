@@ -8,6 +8,7 @@ export interface TestVariation {
       scenario: string;
       expectedOutput: string;
       sourceTestId: string;
+      enabled?: boolean;
     }>;
   }
   
@@ -19,6 +20,7 @@ export interface TestVariation {
     id: string;
     scenario: string;
     expectedOutput: string;
+    enabled?: boolean;
   }
   
   export interface SimplifiedTestCases {

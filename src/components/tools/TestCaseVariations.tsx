@@ -10,13 +10,9 @@ import { TestVariation } from "@/types/variations";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import ScenarioFileUpload from "./ScenarioFileUpload";
 import { ModelFactory } from "@/services/llm/modelfactory";
-
-interface TestCase {
-  id: string;
-  sourceTestId: string;
-  scenario: string;
-  expectedOutput: string;
-}
+import { Switch } from "@/components/ui/switch";
+import { Power } from "lucide-react";
+import { TestCase } from "./types";
 
 interface EditingState {
   scenario: string;
@@ -41,6 +37,7 @@ export function TestCaseVariations({
     addVariation,
     updateVariation,
     deleteVariation,
+    toggleScenarioEnabled,
     setLoading
   } = useTestVariations(selectedTestId);
   
@@ -396,6 +393,24 @@ export function TestCaseVariations({
                           </p>
                         </div>
                       </div>
+                      <div className="flex items-center mr-4">
+                        <Switch
+                          checked={testCase.enabled !== false}
+                          onCheckedChange={(checked) => {
+                            if (selectedTestId) {
+                              toggleScenarioEnabled(selectedTestId, testCase.id, checked);
+                            }
+                          }}
+                          id={`enable-${testCase.id}`}
+                        />
+                        <label 
+                          htmlFor={`enable-${testCase.id}`}
+                          className="ml-2 text-xs text-muted-foreground cursor-pointer"
+                        >
+                          {testCase.enabled !== false ? "Enabled" : "Disabled"}
+                        </label>
+                      </div>
+
                       <div className="flex gap-2 ml-4 flex-shrink-0">
                         <Button
                           variant="ghost"

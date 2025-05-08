@@ -6,20 +6,22 @@ import { ModelFactory } from '@/services/llm/modelfactory';
 import { AnthropicModel } from '@/services/llm/enums';
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { SYSTEM_PROMPTS } from "@/services/prompts";
+import { LLMServiceConfig } from "@/services/llm/types";
 
 export class ConversationChain {
   private model: BaseChatModel;
   private memory: BufferMemory;
   private prompt: ChatPromptTemplate;
 
-  constructor(apiKey: string) {
-    if (!apiKey) {
-      throw new Error('API key is required for ConversationChain');
+  constructor(modelConfig: LLMServiceConfig) {
+    if (!modelConfig || !modelConfig.apiKey) {
+      throw new Error('Valid model configuration is required for ConversationChain');
     }
 
     this.model = ModelFactory.createLangchainModel(
-      AnthropicModel.Sonnet3_5,
-      apiKey
+      modelConfig.id,
+      modelConfig.apiKey,
+      modelConfig.extraParams
     );
 
     this.memory = new BufferMemory({

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { validateGenerateTestsRequest } from '@/lib/validations';
 import { jsonrepair } from 'jsonrepair';
-import { AnthropicModel } from '@/services/llm/enums';
+import { AnthropicModel, LLMProvider } from '@/services/llm/enums';
 import { ModelFactory } from '@/services/llm/modelfactory';
 import { TEST_CASES_PROMPT } from '@/services/prompts';
 import { dbService } from '@/services/db';
@@ -67,11 +67,24 @@ export async function POST(req: Request) {
     const userDescription = agentConfig.agent_user_descriptions?.[0]?.description || "Not provided";
 
     const apiKey = req.headers.get("x-api-key");
+    const modelId = req.headers.get("x-model") || AnthropicModel.Sonnet3_5;
+    const provider = req.headers.get("x-provider") || LLMProvider.Anthropic;
+    const extraParamsStr = req.headers.get("x-extra-params");
+    
+    let extraParams = {};
+    if (extraParamsStr) {
+      try {
+        extraParams = JSON.parse(extraParamsStr);
+      } catch (e) {
+        console.error("Failed to parse extra params", e);
+      }
+    }
+    
     if (!apiKey) {
       return NextResponse.json({ error: "API key required" }, { status: 401 });
     }
 
-    const model = ModelFactory.createLangchainModel(AnthropicModel.Sonnet3_5, apiKey);
+    const model = ModelFactory.createLangchainModel(modelId, apiKey, extraParams);
 
     const context = `Agent Description: ${agentDescription}
 User Description: ${userDescription}`;

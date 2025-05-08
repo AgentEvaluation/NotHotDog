@@ -4,7 +4,6 @@ import { ClerkProvider, SignInButton, SignedIn, SignedOut } from '@clerk/nextjs'
 import { ThemeProvider } from './providers'
 import CustomUserDropdown from "@/components/navigation/CustomUserDropdown";
 import SignupHandler from '@/components/authentication/SignupHandler';
-import ApiKeyConfig from '@/components/config/ApiKeyConfig';
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -45,7 +44,6 @@ export default function RootLayout({
             
           <main className="flex min-h-screen flex-col">
             {children}
-            <ApiKeyConfig />
           </main>
         </ThemeProvider>
       </body>

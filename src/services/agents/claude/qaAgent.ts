@@ -30,7 +30,8 @@ export class QaAgent {
 
     this.model = ModelFactory.createLangchainModel(
       config.modelId || AnthropicModel.Sonnet3_5,
-      apiKey
+      apiKey,
+      config.extraParams || {}
     );
     
     // Initialize BufferMemory to track conversation context automatically

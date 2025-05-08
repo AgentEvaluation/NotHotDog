@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ChatMessage, TestChat } from '@/types/chat';
 import { useTestRuns } from './useTestRuns';
+import { ModelFactory } from '@/services/llm/modelfactory';
 
 export type TestExecutionStatus = 'idle' | 'connecting' | 'running' | 'completed' | 'failed';
 export type TestExecutionError = {
@@ -37,27 +38,26 @@ export function useTestExecution() {
   }, []);
 
   const executeTest = async (testId: string) => {
-    console.log("came inside");
     setStatus('connecting');
     setError(null);
 
-    const userApiKey = localStorage.getItem("anthropic_api_key") || "";
-    const userModel = localStorage.getItem("anthropic_model") || "";
+    const modelConfig = ModelFactory.getSelectedModelConfig();
     
-    if (!userApiKey || !userModel) {
+    if (!modelConfig) {
       setStatus('failed');
-      setError({ message: "Anthropic API key or model is missing. Please configure them." });
+      setError({ message: "No LLM model configured. Please add a model in settings." });
       return;
     }
-    console.log("came inside");
-
+    
     try {
       const response = await fetch('/api/tools/test-runs', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Api-Key': userApiKey,
-          'X-Model': userModel,
+          'X-Api-Key': modelConfig.apiKey,
+          'X-Model': modelConfig.id,
+          'X-Provider': modelConfig.provider,
+          ...(modelConfig.extraParams ? { 'X-Extra-Params': JSON.stringify(modelConfig.extraParams) } : {})
         },
         body: JSON.stringify({ testId }),
       });
@@ -77,6 +77,7 @@ export function useTestExecution() {
       setError({ message: error.message, details: error.stack });
     }
   };
+
   const resetState = () => {
     setStatus('idle');
     setError(null);

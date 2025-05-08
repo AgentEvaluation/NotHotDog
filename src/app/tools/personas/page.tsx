@@ -9,11 +9,15 @@ import { PersonaCard } from "./personaCard"
 import { EmptyCustomPersonas } from "./emptyCustomPersonas"
 import { Persona } from "@/types"
 import { v4 as uuidv4 } from 'uuid';
+import ApiKeyConfig from "@/components/config/ApiKeyConfig"
+import { getModelConfigHeaders } from "@/utils/model-config-checker"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function PersonasScreen() {
   const [personas, setPersonas] = useState<Persona[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false)
 
   const [editingPersona, setEditingPersona] = useState<Persona | null>(null)
   const [isNewPersonaDialogOpen, setIsNewPersonaDialogOpen] = useState(false)
@@ -80,24 +84,23 @@ export default function PersonasScreen() {
     try {
       setLoading(true)
 
-      const apiKey = localStorage.getItem("anthropic_api_key");
-      if (!apiKey) {
-        setError("API key is required to generate personas");
+      const headers = getModelConfigHeaders();
+      if (!headers) {
+        setError("LLM model configuration required to generate personas");
+        setIsApiKeyModalOpen(true);
         setLoading(false);
         return;
       }
 
       const response = await fetch('/api/tools/personas', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': apiKey
-        },
+        headers,
         body: JSON.stringify(newPersona)
       })
       
       if (!response.ok) {
-        throw new Error('Failed to create persona')
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create persona')
       }
       
       const createdPersona = await response.json()
@@ -179,6 +182,12 @@ export default function PersonasScreen() {
         </PersonaDialog>
       </div>
 
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
       <Tabs defaultValue="all" className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-6 border-b border-muted">
           <TabsTrigger
@@ -238,7 +247,7 @@ export default function PersonasScreen() {
         
         <TabsContent value="custom" className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {personas.slice(4).length > 0 ? (
+            {personas.filter(p => !p.isDefault).length > 0 ? (
               personas.filter(p => !p.isDefault).map((persona) => (
                 <PersonaCard
                   key={persona.id}
@@ -257,8 +266,12 @@ export default function PersonasScreen() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* API Key Config Modal */}
+      <ApiKeyConfig
+        isOpen={isApiKeyModalOpen}
+        setIsOpen={setIsApiKeyModalOpen}
+      />
     </div>
   )
 }
-
-

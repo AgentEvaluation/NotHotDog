@@ -9,3 +9,16 @@ export interface ModelConfig {
     defaultTemperature: number;
   }
   
+export interface LLMServiceConfig {
+  id: string;
+  provider: LLMProvider;
+  name: string;
+  apiKey: string;
+  keyName: string;
+  extraParams?: Record<string, any>;
+}
+
+export interface UserModelConfigs {
+  configs: LLMServiceConfig[];
+  selectedModelId: string;
+}

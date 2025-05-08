@@ -1,14 +1,26 @@
-'use client'
+'use client';
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@clerk/nextjs';
 
-export default function HomePage() {
-  const router = useRouter()
+export default function RootPage() {
+  const router = useRouter();
+  const { isSignedIn, isLoaded } = useAuth();
   
   useEffect(() => {
-    router.push('/tools')
-  }, [router])
+    if (isLoaded) {
+      if (isSignedIn) {
+        router.push('/tools');
+      } else {
+        router.push('/login');
+      }
+    }
+  }, [isLoaded, isSignedIn, router]);
   
-  return null
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="animate-pulse text-primary">Loading...</div>
+    </div>
+  );
 }

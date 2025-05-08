@@ -37,14 +37,15 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { results } = validateAnalyzeResultsRequest(body);
 
-    const apiKey = localStorage.getItem('anthropic_api_key');
-    if (!apiKey) {
-      throw new Error('Anthropic API key not found. Please add your API key in settings.');
+    const modelConfig = ModelFactory.getSelectedModelConfig();
+    if (!modelConfig) {
+      throw new Error('No LLM model configured. Please set up a model in settings.');
     }
 
     const model = ModelFactory.createLangchainModel(
-      AnthropicModel.Sonnet3_5,
-      apiKey
+      modelConfig.id,
+      modelConfig.apiKey,
+      modelConfig.extraParams
     );
 
     const analysisChain = RunnableSequence.from([

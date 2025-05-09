@@ -77,23 +77,22 @@ export class TestService {
     }
   }
   
-  async deleteTestVariation(variation: TestVariation) {
-    try {
-      const remainingIds = variation.cases.map(tc => tc.id);
-      const result = await prisma.test_scenarios.deleteMany({
-        where: {
-          agent_id: variation.testId,
-          id: {
-            notIn: remainingIds
-          }
+    async deleteTestScenarios(testId: string, scenarioIds: string[]) {
+        try {
+        const result = await prisma.test_scenarios.deleteMany({
+            where: {
+                agent_id: testId,
+                id: {
+                    in: scenarioIds
+                }
+            }
+        });
+        return { deletedCount: result.count };
+        } catch (error) {
+        console.error("Database error in deleteTestScenarios:", error);
+        throw new Error("Failed to delete test scenarios");
         }
-      });
-      return { deletedCount: result.count };
-    } catch (error) {
-      console.error("Database error in deleteTestVariation:", error);
-      throw new Error("Failed to delete test variation");
     }
-  }
 }
 
 export const testService = new TestService();

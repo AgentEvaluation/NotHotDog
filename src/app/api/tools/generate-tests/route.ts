@@ -21,16 +21,31 @@ function extractJSON(text: string): any {
       text = text.slice(jsonStart);
     }
     
-    // Repair and parse the JSON
-    const repaired = jsonrepair(text);
-    const parsed = JSON.parse(repaired);
-    
-    // If we got an array directly, wrap it
-    if (Array.isArray(parsed)) {
-      return { evaluations: parsed };
+    // First try to parse directly (might work if JSON is well-formed)
+    try {
+      const parsed = JSON.parse(text);
+      return Array.isArray(parsed) ? { evaluations: parsed } : parsed;
+    } catch (parseError) {
+      // If direct parsing fails, try to clean and repair the JSON
+      // Remove any backticks, markdown code blocks, or other non-JSON elements
+      text = text.replace(/```json|```|`/g, '');
+      
+      // Find the end of JSON structure (to handle trailing text)
+      const lastBrace = text.lastIndexOf('}');
+      const lastBracket = text.lastIndexOf(']');
+      const jsonEnd = Math.max(lastBrace, lastBracket);
+      
+      if (jsonEnd !== -1) {
+        text = text.substring(0, jsonEnd + 1);
+      }
+      
+      // Now attempt repair on the cleaned text
+      const repaired = jsonrepair(text);
+      const parsed = JSON.parse(repaired);
+      
+      // If we got an array directly, wrap it
+      return Array.isArray(parsed) ? { evaluations: parsed } : parsed;
     }
-    
-    return parsed;
   } catch (e) {
     console.warn('JSON extraction failed:', e);
     return { evaluations: [] };

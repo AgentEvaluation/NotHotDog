@@ -172,25 +172,26 @@ export function TestCaseVariations({
   const deleteTestCases = async (idsToDelete: string[]) => {
     if (!selectedTestId) return;
 
-    const updatedCases = generatedCases.filter(
-      (tc) => !idsToDelete.includes(tc.id)
-    );
-    const variation = {
-      id: crypto.randomUUID(),
-      testId: selectedTestId,
-      sourceTestId: selectedTestId,
-      timestamp: new Date().toISOString(),
-      cases: updatedCases,
-    };
+    try {
+      await fetch('/api/tools/test-variations', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scenarioIds: idsToDelete, testId: selectedTestId }),
+      });
 
-    await deleteVariation(variation);
+      // Update local state after successful deletion
+      setGeneratedCases(prevCases => 
+        prevCases.filter(tc => !idsToDelete.includes(tc.id))
+      );
+      
+      setSelectedIds(prev => prev.filter(id => !idsToDelete.includes(id)));
 
-    setGeneratedCases(updatedCases);
-    setSelectedIds((prev) => prev.filter((id) => !idsToDelete.includes(id)));
-
-    if (editingId && idsToDelete.includes(editingId)) {
-      setEditingId(null);
-      setEditingState(null);
+      if (editingId && idsToDelete.includes(editingId)) {
+        setEditingId(null);
+        setEditingState(null);
+      }
+    } catch (error) {
+      console.error("Failed to delete test cases:", error);
     }
   };
 

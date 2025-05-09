@@ -55,13 +55,17 @@ export async function POST(request: Request) {
 
   export async function DELETE(request: Request) {
     try {
-      const { variation } = await request.json();
-      const result = await dbService.deleteTestVariation(variation);
+      const { scenarioIds, testId } = await request.json();
+      
+      if (!scenarioIds || !Array.isArray(scenarioIds) || !testId) {
+        return NextResponse.json({ error: 'Scenario IDs and test ID are required' }, { status: 400 });
+      }
+      
+      const result = await dbService.deleteTestScenarios(testId, scenarioIds);
       return NextResponse.json(result);
     } catch (error) {
-      console.error('Error deleting variation:', error);
-      return NextResponse.json({ error: 'Failed to delete variation' }, { status: 500 });
+      console.error('Error deleting scenarios:', error);
+      return NextResponse.json({ error: 'Failed to delete scenarios' }, { status: 500 });
     }
   }
-  
-  
+    

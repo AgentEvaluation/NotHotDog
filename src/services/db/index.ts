@@ -28,7 +28,7 @@ export const dbService = {
   createTestVariation: testService.createTestVariation.bind(testService),
   updateTestVariation: testService.updateTestVariation.bind(testService),
   updateScenarioEnabled: testService.updateScenarioEnabled.bind(testService),
-  deleteTestVariation: testService.deleteTestVariation.bind(testService),
+  deleteTestScenarios: testService.deleteTestScenarios.bind(testService),
   
   // Persona Mappings
   getPersonaMappingByAgentId: personaMappingService.getPersonaMappingByAgentId.bind(personaMappingService),

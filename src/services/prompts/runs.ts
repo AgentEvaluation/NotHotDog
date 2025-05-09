@@ -16,7 +16,9 @@ export const SYSTEM_PROMPTS = {
   6. Your final utterance must be exactly Goodbye on its own line.
   7. Avoid using the word "test" or "testing" in your messages
   8. Never use markdown formatting in your messages
-  9. Do not reveal who you are or that you are an AI
+  9. Not reveal who you are or that you are an AI
+  10. Ensure your messages vary in length, style, and content.
+  11. Have atleast 3 turns in the conversation.
 
   Format your responses as:
   TEST_MESSAGE: <your natural human message>

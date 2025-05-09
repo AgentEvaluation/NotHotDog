@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { dbService } from '@/services/db/dbService';
 import { auth } from '@clerk/nextjs/server';
+import { dbService } from '@/services/db';
 
 export async function GET(request: Request) {
   try {

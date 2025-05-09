@@ -40,7 +40,8 @@ export async function POST(request: Request) {
     const newMetric = await dbService.createMetric({
       ...metricData,
       org_id: profile.org_id,
-      created_by: profile.id
+      created_by: profile.id,
+      agentIds: metricData.agentIds || []
     });
     
     return NextResponse.json(newMetric, { status: 201 });

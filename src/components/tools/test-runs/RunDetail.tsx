@@ -1,0 +1,66 @@
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { TestRun } from "@/types/runs";
+import { TestExecutionError } from "@/hooks/useTestExecution"; // Import correct type
+import { TestChat } from "@/types/chat";
+
+interface RunDetailProps {
+  run: TestRun;
+  onBack: () => void;
+  onSelectChat: (chat: TestChat) => void;
+  error: TestExecutionError | null; // Update type here
+}
+
+export default function RunDetail({ run, onBack, onSelectChat, error }: RunDetailProps) {
+  return (
+    <div className="p-5 space-y-3 max-w-6xl mx-auto">
+      {error && (
+        <div className="p-4 mb-4 text-red-600 bg-red-100 rounded">
+          {error.message}
+        </div>
+      )}
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" onClick={onBack}>
+          ← Back to Runs
+        </Button>
+      </div>
+
+      <div>
+        <h2 className="text-2xl font-semibold">Run #{run.name}</h2>
+        <p className="text-sm text-muted-foreground">
+          All conversations in this test run
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        {(run.chats || []).map((chat) => (
+          <div
+            key={chat.id}
+            className="flex items-center justify-between p-4 bg-background border border-border rounded-xl cursor-pointer hover:bg-muted overflow-hidden"
+            onClick={() => onSelectChat(chat)}
+          >
+            <div className="flex-1 min-w-0">
+              <div className="font-medium truncate">{chat.scenarioName ?? "Unknown Scenario"}</div>
+              <div className="text-sm text-muted-foreground truncate">{chat.personaName ?? "Unknown Persona"}</div>
+              <div className="text-sm text-muted-foreground">{chat.messages.length} messages</div>
+            </div>
+            <div className="flex-shrink-0 flex items-center gap-3">
+              <Badge
+                variant={
+                  chat.status === "passed"
+                    ? "outline"
+                    : chat.status === "failed"
+                    ? "destructive"
+                    : "secondary"
+                }
+              >
+                {chat.status}
+              </Badge>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

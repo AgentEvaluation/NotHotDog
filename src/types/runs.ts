@@ -27,19 +27,7 @@ export interface TestRun {
   createdBy: string;
 }
 
-
-
 export type TestRunStatus = 'pending' | 'running' | 'completed' | 'failed';
-
-// export interface TestChat {
-//   id: string;
-//   name: string;
-//   messages: TestMessage[];
-//   metrics: {
-//     correct: number;
-//     incorrect: number;
-//   };
-// }
 
 export interface TestMessage {
   id: string;

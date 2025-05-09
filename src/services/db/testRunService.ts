@@ -1,0 +1,166 @@
+import { prisma } from '@/lib/prisma';
+import { TestRun } from '@/types/runs';
+import { ExtendedTestConversation } from "@/types/extendedTestConversation";
+
+export class TestRunService {
+  async createTestRun(run: TestRun) {
+    try {
+      return await prisma.test_runs.create({
+        data: {
+          id: run.id,
+          agent_id: run.agentId,
+          name: run.name,
+          status: run.status,
+          total_tests: run.metrics.total,
+          passed_tests: run.metrics.passed,
+          failed_tests: run.metrics.failed,
+          created_by: run.createdBy,
+          test_conversations: {
+            create: run.chats.map(chat => ({
+              id: chat.id,
+              scenario_id: chat.scenario,
+              persona_id: chat.personaId || "",
+              status: chat.status,
+              error_message: chat.error || null,
+              validation_reason: chat.validationResult ? chat.validationResult.explanation : null,
+              is_correct: chat.validationResult ? chat.validationResult.isCorrect : undefined,
+              conversation_messages: {
+                create: chat.messages.map(msg => ({
+                  id: msg.id,
+                  role: msg.role,
+                  content: msg.content,
+                  is_correct: msg.metrics?.validationScore === 1 ? true : false,
+                  response_time: msg.metrics?.responseTime || 0,
+                  validation_score: msg.metrics?.validationScore || 0,
+                  metrics: msg.metrics || {}
+                }))
+              }
+            }))
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Database error in createTestRun:", error);
+      throw new Error("Failed to create test run");
+    }
+  }
+  
+  async getTestRuns(userId: string): Promise<TestRun[]> {
+    try {
+      // Retrieve the user's profile to get the org_id
+      const profile = await prisma.profiles.findUnique({
+        where: { clerk_id: userId }
+      });
+      if (!profile || !profile.org_id) {
+        console.error(`Profile not found or missing org_id for user ${userId}`);
+        throw new Error("Unauthorized: Profile not found or org missing");
+      }
+      
+      const runs = await prisma.test_runs.findMany({
+        where: { agent_configs: { org_id: profile.org_id } },
+        include: {
+          test_conversations: {
+            include: {
+              conversation_messages: true,
+              test_scenarios: true,
+              personas: true, 
+              test_run_metrics: {
+                include: {
+                  metrics: true
+                }
+              }
+            },
+          },
+        },
+        orderBy: { created_at: 'desc' },
+      });
+
+      return runs.map(run => ({
+        id: run.id,
+        name: run.name,
+        timestamp: run.created_at ? run.created_at.toISOString() : new Date().toISOString(),
+        status: run.status as 'pending' | 'running' | 'completed' | 'failed',
+        metrics: {
+          total: run.total_tests ?? 0,
+          passed: run.passed_tests ?? 0,
+          failed: run.failed_tests ?? 0,
+          chats: run.test_conversations.length,
+          correct: 0,
+          incorrect: 0,
+          sentimentScores: { positive: 0, neutral: 0, negative: 0 }
+        },
+        chats: run.test_conversations.map(tc => {
+          const conversation = tc as ExtendedTestConversation;
+          return {
+            id: conversation.id,
+            name: `${tc.test_scenarios?.name || ""} - ${tc.personas?.name || ""}`,
+            scenarioName: tc.test_scenarios?.name,
+            personaName: tc.personas?.name,
+            scenario: conversation.scenario_id,
+            status: conversation.status as 'running' | 'passed' | 'failed',
+            messages: conversation.conversation_messages.map(msg => ({
+              id: msg.id,
+              chatId: msg.conversation_id,
+              role: msg.role as "user" | "assistant",
+              content: msg.content,
+              expectedOutput: undefined,
+              isCorrect: msg.is_correct ?? false,
+              explanation: undefined,
+              metrics: {
+                responseTime: msg.response_time ?? 0,
+                validationScore: msg.validation_score ?? 0
+              }
+            })),
+            metrics: {
+              correct: 0,
+              incorrect: 0,
+              responseTime: [],
+              validationScores: [],
+              contextRelevance: [],
+              metricResults: conversation.test_run_metrics?.map(trm => ({
+                id: trm.id,
+                name: trm.metrics?.name || '',
+                type: trm.metrics?.type || '',
+                score: trm.score,
+                reason: trm.reason || ''
+              })) || []
+            },
+            timestamp: conversation.created_at ? conversation.created_at.toISOString() : new Date().toISOString(),
+            personaId: "",
+            validationResult: {
+              isCorrect: conversation.is_correct ?? false,
+              explanation: conversation.validation_reason ?? ""
+            }
+          };
+        }),     
+        results: [],
+        agentId: run.agent_id,
+        createdBy: run.created_by,
+      }));
+    } catch (error) {
+      console.error("Database error in getTestRuns:", error);
+      throw new Error("Failed to fetch test runs");
+    }
+  }
+  
+
+  async saveMetricResults(testRunId: string, conversationId: string, metricResults: Array<{id: string, score: number, reason: string}>) {
+    try {
+      const operations = metricResults.map(result => ({
+        run_id: testRunId,
+        conversation_id: conversationId,
+        metric_id: result.id,
+        score: result.score,
+        reason: result.reason
+      }));
+      
+      return await prisma.test_run_metrics.createMany({
+        data: operations
+      });
+    } catch (error) {
+      console.error("Error saving metric results:", error);
+    }
+  }
+}
+
+export const testRunService = new TestRunService();

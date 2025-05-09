@@ -4,8 +4,9 @@ import { auth } from "@clerk/nextjs/server";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+   context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
   const { userId } = await auth();
   
   if (!userId) {
@@ -13,7 +14,7 @@ export async function GET(
   }
 
   try {
-    const metric = await dbService.getMetricById(params.id);
+    const metric = await dbService.getMetricById(id);
     if (!metric) {
       return NextResponse.json({ error: "Metric not found" }, { status: 404 });
     }
@@ -26,8 +27,9 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+   context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
   const { userId } = await auth();
   
   if (!userId) {
@@ -42,7 +44,7 @@ export async function PUT(
       return NextResponse.json({ error: "Missing required metric fields" }, { status: 400 });
     }
     
-    const updatedMetric = await dbService.updateMetric(params.id, metricData);
+    const updatedMetric = await dbService.updateMetric(id, metricData);
     
     return NextResponse.json(updatedMetric);
   } catch (error) {
@@ -53,8 +55,9 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+   context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
   const { userId } = await auth();
   
   if (!userId) {
@@ -62,7 +65,7 @@ export async function DELETE(
   }
 
   try {
-    await dbService.deleteMetric(params.id);
+    await dbService.deleteMetric(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting metric:", error);

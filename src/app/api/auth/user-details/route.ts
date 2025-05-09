@@ -1,5 +1,5 @@
+import { dbService } from "@/services/db";
 import { NextResponse } from "next/server";
-import { dbService } from "@/services/db/dbService";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

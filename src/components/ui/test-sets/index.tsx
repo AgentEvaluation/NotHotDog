@@ -8,15 +8,3 @@ export interface TestSet {
   createdAt: Date;
   updatedAt: Date;
 }
-
-// export interface TestScenario {
-//   id: string;
-//   input: string;
-//   expectedOutput: string;
-//   type: 'transcript' | 'rule' | 'metric';
-//   metrics?: {
-//     sentimentAnalysis?: number;
-//     responseQuality?: number;
-//     hallucination?: number;
-//   };
-// }

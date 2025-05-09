@@ -5,9 +5,9 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Sparkles, Plus, FileText, Search, Trash2 } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
-import { Metric, MetricType, Criticality } from "./types"
 import MetricsTable from "./MetricsTable"
 import MetricFormDialog from "./MetricFormDialog"
+import { Criticality, Metric, MetricType } from "@/types"
 
 export default function MetricsPage() {
 

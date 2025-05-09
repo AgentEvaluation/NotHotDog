@@ -1,6 +1,6 @@
 'use client';
 
-import { TestRunsDashboard } from '@/components/tools/TestRunsDashboard';
+import { TestRunsDashboard } from '@/components/tools/test-runs/TestRunsDashboard';
 import { Card } from '@/components/ui/card';
 
 export default function RunsPage() {

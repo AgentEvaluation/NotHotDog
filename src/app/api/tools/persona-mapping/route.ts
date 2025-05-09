@@ -1,6 +1,6 @@
 // api/tools/persona-mapping/route.ts
 import { NextResponse } from "next/server";
-import { dbService } from "@/services/db/dbService";
+import { dbService } from "@/services/db";
 import { auth } from "@clerk/nextjs/server"
 
 export async function GET(request: Request) {

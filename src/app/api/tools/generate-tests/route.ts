@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { validateGenerateTestsRequest } from '@/lib/validations';
 import { jsonrepair } from 'jsonrepair';
 import { AnthropicModel, LLMProvider } from '@/services/llm/enums';
 import { ModelFactory } from '@/services/llm/modelfactory';
@@ -63,8 +62,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Agent config not found" }, { status: 404 });
     }
 
-    const agentDescription = agentConfig.agent_descriptions?.[0]?.description || "Not provided";
-    const userDescription = agentConfig.agent_user_descriptions?.[0]?.description || "Not provided";
+    const agentDescription = agentConfig.agentDescription || "Not provided";
+    const userDescription = agentConfig.userDescription || "Not provided";
 
     const apiKey = req.headers.get("x-api-key");
     const modelId = req.headers.get("x-model") || AnthropicModel.Sonnet3_5;

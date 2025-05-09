@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { dbService } from "@/services/db/dbService";
+import { dbService } from "@/services/db";
 import { auth } from "@clerk/nextjs/server";
 import { mapToUIPersona } from "@/lib/utils";
 import { generateSystemPromptForPersona } from "@/services/persona";

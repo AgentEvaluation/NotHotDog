@@ -5,6 +5,7 @@ import { testRunService } from './testRunService';
 import { metricsService } from './metricsService';
 import { userService } from './userService';
 import { personaMappingService } from './personaMappingService';
+import { conversationService } from './conversationService';
 
 // Re-export all services in a single object for compatibility
 export const dbService = {
@@ -39,6 +40,9 @@ export const dbService = {
   createTestRun: testRunService.createTestRun.bind(testRunService),
   getTestRuns: testRunService.getTestRuns.bind(testRunService),
   saveMetricResults: testRunService.saveMetricResults.bind(testRunService),
+  updateTestRun: testRunService.updateTestRun.bind(testRunService),
+  updateTestConversationStatus: testRunService.updateTestConversationStatus.bind(testRunService),
+ 
   
   // Metrics
   getMetricById: metricsService.getMetricById.bind(metricsService),
@@ -52,4 +56,10 @@ export const dbService = {
   signupUser: userService.signupUser.bind(userService),
   getProfileByClerkId: userService.getProfileByClerkId.bind(userService),
   getOrganization: userService.getOrganization.bind(userService),
+
+  // Conversation management
+saveConversationMessage: conversationService.saveConversationMessage.bind(conversationService),
+getConversationMessages: conversationService.getConversationMessages.bind(conversationService),
+reconstructMemoryFromDb: conversationService.reconstructMemoryFromDb.bind(conversationService),
+createTestConversation: conversationService.createTestConversation.bind(conversationService),
 };

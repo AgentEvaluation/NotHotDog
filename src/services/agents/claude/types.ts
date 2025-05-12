@@ -23,6 +23,7 @@ export interface Rule {
     persona?: string;
     userApiKey: string;
     extraParams?: Record<string, any>;
+    conversationId?: string;
   }
   
 

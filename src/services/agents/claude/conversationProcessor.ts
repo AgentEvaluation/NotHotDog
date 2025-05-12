@@ -5,15 +5,14 @@ import { ConversationHandler } from './conversationHandler';
 import { TestMessage } from '@/types/runs';
 import { RunnableSequence } from '@langchain/core/runnables';
 import { BufferMemory } from 'langchain/memory';
+import { dbService } from '@/services/db';
 
 export class ConversationProcessor {
   private model;
-  private memory: BufferMemory;
   private config: QaAgentConfig;
 
-  constructor(model: any, memory: BufferMemory, config: QaAgentConfig) {
+  constructor(model: any, config: QaAgentConfig) {
     this.model = model;
-    this.memory = memory;
     this.config = config;
   }
 
@@ -26,19 +25,31 @@ export class ConversationProcessor {
     conversationPlan: string[],
     initialResponse: string,
     chatId: string,
-    chain: RunnableSequence
+    chain: RunnableSequence,
+    memory: BufferMemory
   ): Promise<{ messages: TestMessage[], finalResponse: string, totalResponseTime: number }> {
     const messages: TestMessage[] = [];
     let currentResponse = initialResponse;
     let totalResponseTime = 0;
 
     for (const plannedTurn of conversationPlan) {
-      // Load conversation context from BufferMemory
-      const memoryVariables = await this.memory.loadMemoryVariables({});
-      // The memory is stored under the key "chat_history" (as set in the constructor)
+      const memoryVariables = await memory.loadMemoryVariables({});
+      console.log("Memory before turn:", JSON.stringify(memoryVariables.chat_history));
+
       const chatHistory = memoryVariables.chat_history;
       
-      const followUpInputText = `Chat History: ${chatHistory}\n\nPrevious API response: "${currentResponse}"\n\nGiven this response and your plan: "${plannedTurn}"\n\nContinue the conversation naturally.`;
+    //   const followUpInputText = `Chat History: ${chatHistory}\n\nPrevious API response: "${currentResponse}"\n\nGiven this response and your plan: "${plannedTurn}"\n\nContinue the conversation naturally.`;
+      
+      // Ensure followUpInputText is properly formatted and includes sufficient context
+    const followUpInputText = `Chat History (IMPORTANT - USE THIS FOR CONTEXT):
+    ${JSON.stringify(chatHistory)}
+
+    Previous API response: "${currentResponse}"
+
+    Your next plan: "${plannedTurn}"
+
+    Continue the conversation naturally, responding to the latest message while maintaining conversation coherence.`;
+      
       const followUpResult = await chain.invoke({ input: followUpInputText });
       const followUpMessage = ConversationHandler.extractTestMessage(followUpResult);
       
@@ -62,11 +73,16 @@ export class ConversationProcessor {
       const turnResponseTime = Date.now() - startTime;
       totalResponseTime += turnResponseTime;
 
-      // Save this turn into BufferMemory for context in subsequent turns
-      await this.memory.saveContext(
+      // Save this turn into the provided memory instance for context in subsequent turns
+      await memory.saveContext(
         { input: followUpMessage },
         { output: currentResponse }
       );
+
+      const verifyMemory = await memory.loadMemoryVariables({});
+      console.log("Memory after saving:", JSON.stringify(verifyMemory.chat_history));
+
+
 
       // Log turn details in our custom array as well
       messages.push({
@@ -74,13 +90,35 @@ export class ConversationProcessor {
         chatId: chatId,
         role: 'user',
         content: followUpMessage,
-        metrics: { responseTime: turnResponseTime, validationScore: 1 }
+        metrics: { responseTime: 0, validationScore: 1 }
       });
+
+      const userMsgId = messages[messages.length-1].id;
+        await dbService.saveConversationMessage({
+            id: userMsgId,
+            conversationId: chatId,
+            role: 'user',
+            content: followUpMessage,
+            timestamp: new Date().toISOString(),
+            metrics: { responseTime: 0, validationScore: 1 }
+        });
+      
       messages.push({
         id: uuidv4(),
         chatId: chatId,
         role: 'assistant',
         content: currentResponse,
+        metrics: { responseTime: turnResponseTime, validationScore: 1 }
+      });
+
+      // Save assistant response to database
+      const responseId = messages[messages.length-1].id;
+      await dbService.saveConversationMessage({
+        id: responseId,
+        conversationId: chatId,
+        role: 'assistant',
+        content: currentResponse,
+        timestamp: new Date().toISOString(),
         metrics: { responseTime: turnResponseTime, validationScore: 1 }
       });
     }

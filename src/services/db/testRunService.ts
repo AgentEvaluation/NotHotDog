@@ -161,6 +161,45 @@ export class TestRunService {
       console.error("Error saving metric results:", error);
     }
   }
+
+  // In src-services-db-testRunService.ts
+async updateTestRun(testRun: TestRun) {
+    try {
+      return await prisma.test_runs.update({
+        where: { id: testRun.id },
+        data: {
+          status: testRun.status,
+          passed_tests: testRun.metrics.passed,
+          failed_tests: testRun.metrics.failed,
+          total_tests: testRun.metrics.total
+        }
+      });
+    } catch (error) {
+      console.error("Database error in updateTestRun:", error);
+      throw new Error("Failed to update test run");
+    }
+  }
+  
+  async updateTestConversationStatus(conversationId: string, status: string, errorMessage?: string) {
+    try {
+      const updateData: any = {
+        status: status
+      };
+      
+      if (errorMessage) {
+        updateData.error_message = errorMessage;
+      }
+      
+      return await prisma.test_conversations.update({
+        where: { id: conversationId },
+        data: updateData
+      });
+    } catch (error) {
+      console.error("Database error in updateTestConversationStatus:", error);
+      throw new Error("Failed to update test conversation status");
+    }
+  }
+  
 }
 
 export const testRunService = new TestRunService();

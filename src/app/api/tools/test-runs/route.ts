@@ -24,7 +24,6 @@ export async function GET(request: Request) {
   }
 }
 
-
 export async function POST(request: Request) {
   try {
     const { userId } = await auth();
@@ -39,6 +38,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Test ID is required' }, { status: 400 });
     }
 
+    // Setup API key configuration
     const apiKey = request.headers.get("x-api-key");
     const modelId = request.headers.get("x-model") || "";
     const provider = request.headers.get("x-provider") || LLMProvider.Anthropic;
@@ -60,13 +60,13 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get user profile to ensure they have access to this test
+    // Get user profile
     const profile = await dbService.getProfileByClerkId(userId);
     if (!profile) {
       return NextResponse.json({ error: 'User profile not found' }, { status: 404 });
     }
 
-    // Fetch all the necessary data in one go
+    // Fetch all the necessary data
     const testConfig = await dbService.getAgentConfigAll(testId);
     if (!testConfig) {
       return NextResponse.json({ error: 'Test configuration not found' }, { status: 404 });
@@ -85,12 +85,12 @@ export async function POST(request: Request) {
     const enabledScenarios = scenarios.filter(scenario => scenario.enabled !== false);
     const totalRuns = enabledScenarios.length * selectedPersonas.length;
 
-    // Create new test run
+    // Create test run record FIRST
     const testRun: TestRun = {
       id: uuidv4(),
       name: testConfig.name,
       timestamp: new Date().toISOString(),
-      status: 'running' as const, // Explicitly type as TestRunStatus
+      status: 'running' as const,
       metrics: {
         total: totalRuns,
         passed: 0,
@@ -104,17 +104,18 @@ export async function POST(request: Request) {
       agentId: testId,
       createdBy: profile.id
     };
+    
+    // Save the test run to the database immediately
+    await dbService.createTestRun(testRun);
 
-    const completedChats: TestChat[] = [];
-
-    // Format rules to match the required Rule type
+    // Format rules for the agent
     const formattedRules: Rule[] = testConfig.rules.map(rule => ({
-      id: uuidv4(), // Generate an id for each rule
+      id: uuidv4(),
       path: rule.path,
       condition: rule.condition,
       value: rule.value,
       description: rule.description || "",
-      isValid: true // Add the missing isValid property
+      isValid: true
     }));
 
     // Convert inputFormat to Record<string, any>
@@ -123,9 +124,22 @@ export async function POST(request: Request) {
       testConfig.inputFormat as Record<string, any> : 
       {};
 
-    // Run the tests
+    const completedChats: TestChat[] = [];
+
+    // Create test conversations BEFORE running the tests
     for (const scenario of enabledScenarios) {
       for (const personaId of selectedPersonas) {
+        // Create a conversation ID upfront
+        const chatId = uuidv4();
+        
+        // Create the test conversation record in the database BEFORE running the test
+        const conversationId = await  dbService.createTestConversation({
+          runId: testRun.id,
+          scenarioId: scenario.id,
+          personaId: personaId,
+          status: 'running'
+        });
+        
         try {
           const agent = new QaAgent({
             headers: testConfig.headers,
@@ -141,7 +155,9 @@ export async function POST(request: Request) {
             },
             persona: personaId,
             userApiKey: apiKey,
-            extraParams
+            extraParams,
+            // Pass the conversation ID created above to ensure all messages use the same ID
+            conversationId: conversationId
           });
 
           const result = await agent.runTest(
@@ -149,7 +165,6 @@ export async function POST(request: Request) {
             scenario.expectedOutput || ''
           );
 
-          const chatId = uuidv4();
           const agentMetrics = await dbService.getMetricsForAgent(testId);
           
           const conversationValidation = await agent.validateFullConversation(
@@ -187,6 +202,8 @@ export async function POST(request: Request) {
             validationResult: conversationValidation
           };
           
+          // Update the test conversation's status to 'passed' or 'failed'
+          await dbService.updateTestConversationStatus(conversationId, conversationValidation.isCorrect ? 'passed' : 'failed');
 
           completedChats.push(chat);
           testRun.metrics.passed += conversationValidation.isCorrect ? 1 : 0;
@@ -194,11 +211,14 @@ export async function POST(request: Request) {
           testRun.metrics.correct += conversationValidation.isCorrect ? 1 : 0;
           testRun.metrics.incorrect += conversationValidation.isCorrect ? 0 : 1;
           
-          
-        } catch (error: any) { // Type error as any
+        } catch (error: any) {
           console.error('Error in test execution:', error);
+          
+          // Update the test conversation's status to 'failed'
+          await dbService.updateTestConversationStatus(conversationId, 'failed', error.message);
+          
           const chat: TestChat = {
-            id: uuidv4(),
+            id: chatId,
             scenarioName: scenario.scenario,
             personaName: personaId,
             name: scenario.scenario,
@@ -226,10 +246,10 @@ export async function POST(request: Request) {
     }
 
     testRun.chats = completedChats;
-    testRun.status = 'completed' as const; // Explicitly type as TestRunStatus
+    testRun.status = 'completed' as const;
     
-    // Save the test run to the database
-    await dbService.createTestRun(testRun);
+    // Update the test run with final results
+    await dbService.updateTestRun(testRun);
 
     for (const chat of completedChats) {
       const metricResults = chat.metrics.metricResults ?? [];
@@ -243,7 +263,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(testRun);
-  } catch (error: any) { // Type error as any
+  } catch (error: any) {
     console.error('Error executing test:', error);
     return NextResponse.json(
       { error: error.message || 'An error occurred during test execution' },

@@ -6,30 +6,44 @@ export class ValidationService {
     }
   
     async validateWithMetrics(conversation: string, scenario: string, expectedOutput: string, metrics: any[]) {
-      const promptText = `You are evaluating a conversation against expected output and specific metrics.
+        const promptText = `You are evaluating a conversation against expected output and specific metrics.
+        
+        CONVERSATION: ${conversation}
+        SCENARIO: ${scenario}
+        EXPECTED OUTPUT: ${expectedOutput}
+        METRICS: ${JSON.stringify(metrics.map(m => ({id: m.id, type: m.type, criteria: m.check_criteria})))}
+        
+        Your response MUST be VALID JSON with this exact structure:
+        {"isCorrect": boolean, "explanation": "reason", "metrics": [{"id": "metric-id", "score": number, "reason": "explanation"}]}
+        
+        DO NOT include any text outside the JSON object.
+        Evaluate both expected output match and each metric.`;
       
-      CONVERSATION: ${conversation}
-      SCENARIO: ${scenario}
-      EXPECTED OUTPUT: ${expectedOutput}
-      METRICS: ${JSON.stringify(metrics.map(m => ({id: m.id, type: m.type, criteria: m.check_criteria})))}
-      
-      Evaluate both expected output match and each metric. Return JSON with this exact format:
-      {"isCorrect": boolean, "explanation": "reason", "metrics": [{"id": "metric-id", "score": number, "reason": "explanation"}]}`;
-    
-      const result = await this.model.invoke([{ role: 'user', content: promptText }]);
-      const content = typeof result.content === 'string' ? result.content : JSON.stringify(result.content);
-      
-      try {
-        return JSON.parse(content);
-      } catch (error) {
-        console.error("Invalid JSON response:", error);
-        return {
-          isCorrect: false,
-          explanation: "Error parsing evaluation results",
-          metrics: []
-        };
+        const result = await this.model.invoke([{ role: 'user', content: promptText }]);
+        const content = typeof result.content === 'string' ? result.content : JSON.stringify(result.content);
+        
+        try {
+          // Extract JSON if model included explanatory text
+          const jsonMatch = content.match(/(\{.*\})/s);
+          if (jsonMatch) {
+            try {
+              return JSON.parse(jsonMatch[0]);
+            } catch (extractError) {
+              console.error("Failed to extract valid JSON:", extractError);
+            }
+          }
+          
+          // Try direct parsing as fallback
+          return JSON.parse(content);
+        } catch (error) {
+          console.error("Invalid JSON response:", error);
+          return {
+            isCorrect: false,
+            explanation: "Failed to parse evaluation results",
+            metrics: []
+          };
+        }
       }
-    }
     
     public async validateFullConversation(
       fullConversation: string,

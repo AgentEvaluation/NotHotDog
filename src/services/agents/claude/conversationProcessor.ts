@@ -41,14 +41,20 @@ export class ConversationProcessor {
     //   const followUpInputText = `Chat History: ${chatHistory}\n\nPrevious API response: "${currentResponse}"\n\nGiven this response and your plan: "${plannedTurn}"\n\nContinue the conversation naturally.`;
       
       // Ensure followUpInputText is properly formatted and includes sufficient context
-    const followUpInputText = `Chat History (IMPORTANT - USE THIS FOR CONTEXT):
-    ${JSON.stringify(chatHistory)}
-
-    Previous API response: "${currentResponse}"
-
-    Your next plan: "${plannedTurn}"
-
-    Continue the conversation naturally, responding to the latest message while maintaining conversation coherence.`;
+      const followUpInputText = `
+        CONVERSATION HISTORY:
+        ${JSON.stringify(chatHistory)}
+        
+        PREVIOUS RESPONSE: "${currentResponse}"
+        
+        NEXT STEP IN PLAN: "${plannedTurn}"
+        
+        IMPORTANT: 
+        1. Continue the conversation naturally
+        2. Address the conversation directly
+        3. Do not repeat yourself or use generic responses
+        4. Be specific and substantive in your response
+        `;
       
       const followUpResult = await chain.invoke({ input: followUpInputText });
       const followUpMessage = ConversationHandler.extractTestMessage(followUpResult);

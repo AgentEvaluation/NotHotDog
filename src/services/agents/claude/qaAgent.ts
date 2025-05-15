@@ -90,7 +90,16 @@ export class QaAgent {
       ]);
 
       // Generate initial conversation plan and test message
-      const planInput = `Test this scenario: ${scenario}\nExpected behavior: ${expectedOutput}\n\nPlan and start a natural conversation to test this scenario.`;
+      // const planInput = `Test this scenario: ${scenario}\nExpected behavior: ${expectedOutput}\n\nPlan and start a natural conversation to test this scenario.`;
+      // Generate initial conversation plan and test message
+      const planInput = `
+        Test this scenario: ${scenario}
+        Expected behavior: ${expectedOutput}
+
+        Begin a natural conversation that directly addresses this specific scenario.
+        Make sure your responses are consistent and match your personality traits throughout.
+        `;
+      
       const planResult = await chain.invoke({ input: planInput });
       const initialTestMessage = ConversationHandler.extractTestMessage(planResult);
       const conversationPlan = ConversationHandler.extractConversationPlan(planResult);

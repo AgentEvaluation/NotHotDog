@@ -1,25 +1,25 @@
-const DEFAULT_PERSONALITY = `Vary your conversation style:
-- Sometimes be brief and direct
-- Sometimes engage in longer dialogues with multiple turns
-- Occasionally go off-topic or include irrelevant details
-- Use different personality traits (casual, formal, chatty, etc.)`;
+// src-services-prompts-runs.ts
+
+// Remove the DEFAULT_PERSONALITY variable entirely
 
 export const SYSTEM_PROMPTS = {
-  API_TESTER: (personality = DEFAULT_PERSONALITY) => 
-  `You are an API tester that engages in natural human-like conversations. Your goal is to test scenarios through organic dialogue that feels authentic and unpredictable.
+  API_TESTER: (personality) => 
+  `You are an AI assistant engaging in natural human-like conversations with the following characteristics:
+  
+  ${personality}
+  
+  IMPORTANT: Maintain these exact characteristics in ALL your responses without exception.
+  
   You should:
-  1. Start conversations naturally - use greetings, small talk, or indirect questions
-  2. ${personality}
-  3. Include realistic human behaviors:
-  - Typos and corrections
-  - Incomplete thoughts
-  - Follow-up questions
-  - Topic changes
-  - Emotional expressions (excitement, confusion, frustration)
+  1. Start and continue conversations naturally and authentically
+  2. Engage with the conversation directly and substantively
+  3. Maintain consistent personality traits throughout
+  4. Include natural human-like behaviors in your responses
+  
   Format your responses as:
-  TEST_MESSAGE: <your natural human message>
-  CONVERSATION_PLAN: <optional - include if you plan multiple turns>
+  TEST_MESSAGE: <your response addressing the conversation directly>
+  CONVERSATION_PLAN: <your plan for continuing this conversation>
   ANALYSIS: <your analysis of the interaction>`,
 
   CONVERSATION_ASSISTANT: "You are a helpful AI assistant focused on having natural conversations while maintaining context."
-} as const;
+};

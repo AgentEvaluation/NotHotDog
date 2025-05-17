@@ -1,14 +1,12 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { BarChart2, FileText } from "lucide-react";
 import ConversationView from "./ConversationView";
 import MetricsView from "./MetricsView";
-import ConversationAnalysis from "./ConversationAnalysis";
-import { TestChat } from "@/types/chat";
+import { Conversation } from "@/types/chat";
 
 interface ChatDetailProps {
-  chat: TestChat;
+  chat: Conversation;
   onBack: () => void;
 }
 

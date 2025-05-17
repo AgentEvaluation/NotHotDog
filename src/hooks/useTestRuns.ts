@@ -21,15 +21,7 @@ export function useTestRuns() {
   };
 
   const addRun = async (newRun: TestRun) => {
-    await errorContext.withErrorHandling(async () => {
-      const response = await fetch('/api/tools/test-runs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newRun)
-      });
-      const data = await response.json();
-      setRuns(prev => [data.data, ...prev]); 
-    });
+      setRuns(prev => [newRun, ...prev]); 
   };
 
   const updateRun = async (updatedRun: TestRun) => {

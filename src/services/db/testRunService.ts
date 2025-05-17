@@ -153,7 +153,9 @@ export class TestRunService {
         score: result.score,
         reason: result.reason
       }));
-      
+      console.log("+++++++++++++++++++++")
+      console.log(operations);
+      console.log("+++++++++++++++++++++")
       return await prisma.test_run_metrics.createMany({
         data: operations
       });

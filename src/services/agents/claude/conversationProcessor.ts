@@ -1,12 +1,14 @@
 import { v4 as uuidv4 } from 'uuid';
-import { ApiHandler } from './apiHandler';
-import { QaAgentConfig } from './types';
-import { ConversationHandler } from './conversationHandler';
 import { TestMessage } from '@/types/runs';
 import { RunnableSequence } from '@langchain/core/runnables';
 import { BufferMemory } from 'langchain/memory';
 import { dbService } from '@/services/db';
+import { QaAgentConfig } from './types';
 
+/**
+ * ConversationProcessor - Simplified helper class for processing conversation turns
+ * Updated to work with adaptive conversation approach
+ */
 export class ConversationProcessor {
   private model;
   private config: QaAgentConfig;
@@ -17,118 +19,194 @@ export class ConversationProcessor {
   }
 
   /**
-   * Process multi-turn conversation by leveraging both BufferMemory and custom logging.
-   * Each turn loads the current memory context, generates a follow-up prompt, calls the API,
-   * and then saves the turn to memory.
+   * Process a single conversation message
+   * Handles API request, response parsing, and database operations
    */
-  async processMultiTurnConversation(
-    conversationPlan: string[],
-    initialResponse: string,
+  async processMessage(
+    message: string,
     chatId: string,
-    chain: RunnableSequence,
     memory: BufferMemory
-  ): Promise<{ messages: TestMessage[], finalResponse: string, totalResponseTime: number }> {
-    const messages: TestMessage[] = [];
-    let currentResponse = initialResponse;
-    let totalResponseTime = 0;
-
-    for (const plannedTurn of conversationPlan) {
-      const memoryVariables = await memory.loadMemoryVariables({});
-      console.log("Memory before turn:", JSON.stringify(memoryVariables.chat_history));
-
-      const chatHistory = memoryVariables.chat_history;
+  ): Promise<{
+    response: string;
+    responseTime: number;
+    messages: TestMessage[];
+  }> {
+    try {
+      // Import required modules here to avoid circular dependencies
+      const { ApiHandler } = require('./apiHandler');
+      const { ConversationHandler } = require('./conversationHandler');
       
-    //   const followUpInputText = `Chat History: ${chatHistory}\n\nPrevious API response: "${currentResponse}"\n\nGiven this response and your plan: "${plannedTurn}"\n\nContinue the conversation naturally.`;
+      // Format the message according to API requirements
+      const formattedInput = ApiHandler.formatInput(
+        message, 
+        this.config.apiConfig.inputFormat
+      );
       
-      // Ensure followUpInputText is properly formatted and includes sufficient context
-      const followUpInputText = `
-        CONVERSATION HISTORY:
-        ${JSON.stringify(chatHistory)}
-        
-        PREVIOUS RESPONSE: "${currentResponse}"
-        
-        NEXT STEP IN PLAN: "${plannedTurn}"
-        
-        IMPORTANT: 
-        1. Continue the conversation naturally
-        2. Address the conversation directly
-        3. Do not repeat yourself or use generic responses
-        4. Be specific and substantive in your response
-        `;
-      
-      const followUpResult = await chain.invoke({ input: followUpInputText });
-      const followUpMessage = ConversationHandler.extractTestMessage(followUpResult);
-      
-      const formattedFollowUpInput = ApiHandler.formatInput(followUpMessage, this.config.apiConfig.inputFormat);
-
+      // Call the endpoint and measure response time
       const startTime = Date.now();
       let apiResponse;
       try {
         apiResponse = await ApiHandler.callEndpoint(
           this.config.endpointUrl,
           this.config.headers,
-          formattedFollowUpInput,
+          formattedInput,
+          // Add timeout signal
+          new AbortController().signal
         );
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
-          throw new Error('API request timed out after 10 seconds');
+          throw new Error('API request timed out');
         }
         throw error;
       }
-      currentResponse = apiResponse?.response?.text || ConversationHandler.extractChatResponse(apiResponse, this.config.apiConfig.rules);
-      const turnResponseTime = Date.now() - startTime;
-      totalResponseTime += turnResponseTime;
-
-      // Save this turn into the provided memory instance for context in subsequent turns
+      const responseTime = Date.now() - startTime;
+      
+      // Extract chat response
+      const chatResponse = apiResponse?.response?.text || 
+        ConversationHandler.extractChatResponse(apiResponse, this.config.apiConfig.rules);
+      
+      // Save to memory
       await memory.saveContext(
-        { input: followUpMessage },
-        { output: currentResponse }
+        { input: message },
+        { output: chatResponse }
       );
-
-      const verifyMemory = await memory.loadMemoryVariables({});
-      console.log("Memory after saving:", JSON.stringify(verifyMemory.chat_history));
-
-
-
-      // Log turn details in our custom array as well
-      messages.push({
-        id: uuidv4(),
-        chatId: chatId,
+      
+      // Create message objects
+      const userMsgId = uuidv4();
+      const assistantMsgId = uuidv4();
+      
+      const messages: TestMessage[] = [
+        {
+          id: userMsgId,
+          chatId: chatId,
+          role: 'user',
+          content: message,
+          metrics: { responseTime: 0, validationScore: 1 }
+        },
+        {
+          id: assistantMsgId,
+          chatId: chatId,
+          role: 'assistant',
+          content: chatResponse,
+          metrics: { responseTime, validationScore: 1 }
+        }
+      ];
+      
+      // Save to database
+      await dbService.saveConversationMessage({
+        id: userMsgId,
+        conversationId: chatId,
         role: 'user',
-        content: followUpMessage,
+        content: message,
+        timestamp: new Date().toISOString(),
         metrics: { responseTime: 0, validationScore: 1 }
       });
-
-      const userMsgId = messages[messages.length-1].id;
-        await dbService.saveConversationMessage({
-            id: userMsgId,
-            conversationId: chatId,
-            role: 'user',
-            content: followUpMessage,
-            timestamp: new Date().toISOString(),
-            metrics: { responseTime: 0, validationScore: 1 }
-        });
       
-      messages.push({
-        id: uuidv4(),
-        chatId: chatId,
-        role: 'assistant',
-        content: currentResponse,
-        metrics: { responseTime: turnResponseTime, validationScore: 1 }
-      });
-
-      // Save assistant response to database
-      const responseId = messages[messages.length-1].id;
       await dbService.saveConversationMessage({
-        id: responseId,
+        id: assistantMsgId,
         conversationId: chatId,
         role: 'assistant',
-        content: currentResponse,
+        content: chatResponse,
         timestamp: new Date().toISOString(),
-        metrics: { responseTime: turnResponseTime, validationScore: 1 }
+        metrics: { responseTime, validationScore: 1 }
       });
+      
+      return { response: chatResponse, responseTime, messages };
+    } catch (error) {
+      console.error("Error processing message:", error);
+      throw error;
     }
+  }
 
-    return { messages, finalResponse: currentResponse, totalResponseTime };
+  /**
+   * Evaluate if conversation should continue based on current progress
+   * NOTE: This replaces the rigid conversation plan approach
+   */
+  async evaluateContinuation(
+    chain: RunnableSequence,
+    memory: BufferMemory,
+    scenario: string,
+    expectedOutput: string
+  ): Promise<{
+    shouldContinue: boolean;
+    reason: string;
+  }> {
+    try {
+      // Load current conversation history
+      const memoryVariables = await memory.loadMemoryVariables({});
+      const history = memoryVariables.chat_history;
+      
+      // Prepare evaluation prompt
+      const evaluationPrompt = `
+        Test scenario: ${scenario}
+        Expected behavior: ${expectedOutput}
+        
+        Current conversation history:
+        ${JSON.stringify(history)}
+        
+        Based on the conversation so far, should we continue the test conversation?
+        Consider:
+        1. Has enough information been gathered to evaluate the agent?
+        2. Is the agent's behavior clear in relation to the expected output?
+        3. Would additional messages add value to the evaluation?
+        
+        Answer YES if we should continue, or NO with a brief reason if we should stop.
+      `;
+      
+      // Get model's evaluation
+      const result = await chain.invoke({ input: evaluationPrompt });
+      const shouldContinue = result.toLowerCase().includes('yes');
+      
+      // Extract reason if available
+      const reasonMatch = result.match(/no[,:\s]+(.+)/i);
+      const reason = reasonMatch ? reasonMatch[1].trim() : 'Sufficient information gathered';
+      
+      return { shouldContinue, reason };
+    } catch (error) {
+      console.error("Error evaluating continuation:", error);
+      // Default to continuing if evaluation fails
+      return { shouldContinue: true, reason: "Evaluation error" };
+    }
+  }
+
+  /**
+   * Generate the next message based on conversation history
+   * Creates more adaptive and natural follow-ups
+   */
+  async generateNextMessage(
+    chain: RunnableSequence,
+    memory: BufferMemory,
+    scenario: string,
+    expectedOutput: string
+  ): Promise<string> {
+    try {
+      // Load current conversation history
+      const memoryVariables = await memory.loadMemoryVariables({});
+      const history = memoryVariables.chat_history;
+      
+      // Prepare generation prompt
+      const generationPrompt = `
+        Test scenario: ${scenario}
+        Expected behavior: ${expectedOutput}
+        
+        Current conversation history:
+        ${JSON.stringify(history)}
+        
+        Based on the conversation so far, generate the next message you would send
+        to continue testing this scenario. Stay in character and be natural.
+        
+        Next message:
+      `;
+      
+      // Get next message
+      const result = await chain.invoke({ input: generationPrompt });
+      
+      // Clean up any metadata or explanations
+      return result.replace(/^.*?(Message:|Next message:|User:|Human:)/i, '').trim();
+    } catch (error) {
+      console.error("Error generating next message:", error);
+      // Fallback to a generic follow-up
+      return "Could you tell me more about that?";
+    }
   }
 }

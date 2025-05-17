@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChatMessage, TestChat } from '@/types/chat';
+import { ChatMessage, Conversation } from '@/types/chat';
 import { useTestRuns } from './useTestRuns';
 import { ModelFactory } from '@/services/llm/modelfactory';
 import { useErrorContext } from './useErrorContext';
@@ -16,7 +16,7 @@ export function useTestExecution() {
   const [progress, setProgress] = useState<{ completed: number; total: number }>({ completed: 0, total: 0 });
   const [currentMessages, setCurrentMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [selectedChat, setSelectedChat] = useState<TestChat | null>(null);
+  const [selectedChat, setSelectedChat] = useState<Conversation | null>(null);
   
   const [savedAgentConfigs, setSavedAgentConfigs] = useState<Array<{ id: string, name: string }>>([]);
 

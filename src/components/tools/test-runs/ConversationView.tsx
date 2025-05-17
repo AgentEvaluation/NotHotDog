@@ -3,10 +3,10 @@ import { TestMessage } from "@/types/runs";
 import { CollapsibleSection } from "./CollapsibleSection";
 import { BarChart2, FileText } from "lucide-react";
 import ConversationAnalysis from "./ConversationAnalysis";
-import { TestChat } from "@/types/chat";
+import { Conversation } from "@/types/chat";
 
 interface ConversationViewProps {
-  chat: TestChat;
+  chat: Conversation;
 }
 
 export default function ConversationView({ chat }: ConversationViewProps) {

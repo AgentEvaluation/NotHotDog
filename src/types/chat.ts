@@ -15,7 +15,7 @@ export interface ChatMessage {
   };
 }
 
-export interface TestChat {
+export interface Conversation {
   id: string;
   name: string;
   scenario: string;

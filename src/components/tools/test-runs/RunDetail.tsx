@@ -2,14 +2,14 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TestRun } from "@/types/runs";
-import { TestChat } from "@/types/chat";
+import { Conversation } from "@/types/chat";
 import ErrorDisplay from "@/components/common/ErrorDisplay";
 import { useErrorContext } from "@/hooks/useErrorContext";
 
 interface RunDetailProps {
   run: TestRun;
   onBack: () => void;
-  onSelectChat: (chat: TestChat) => void;
+  onSelectChat: (chat: Conversation) => void;
 }
 
 export default function RunDetail({ 

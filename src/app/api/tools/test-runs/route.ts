@@ -5,7 +5,7 @@ import { auth } from '@clerk/nextjs/server';
 import { QaAgent } from '@/services/agents/claude/qaAgent';
 import { v4 as uuidv4 } from 'uuid';
 import { TestRun } from '@/types/runs';
-import { TestChat } from '@/types/chat';
+import { Conversation } from '@/types/chat';
 import { Rule } from '@/services/agents/claude/types';
 import { LLMProvider } from '@/services/llm/enums';
 
@@ -115,14 +115,11 @@ export const POST = withApiHandler(async (request: Request) => {
     testConfig.inputFormat as Record<string, any> : 
     {};
 
-  const completedChats: TestChat[] = [];
+  const completedChats: Conversation[] = [];
 
   // Create test conversations BEFORE running the tests
   for (const scenario of enabledScenarios) {
     for (const personaId of selectedPersonas) {
-      // Create a conversation ID upfront
-      const chatId = uuidv4();
-      
       // Create the test conversation record in the database BEFORE running the test
       const conversationId = await dbService.createTestConversation({
         runId: testRun.id,
@@ -177,8 +174,8 @@ export const POST = withApiHandler(async (request: Request) => {
           );
         });
 
-        const chat: TestChat = {
-          id: chatId,
+        const chat: Conversation = {
+          id: conversationId,
           scenarioName: scenario.scenario,
           personaName: personaId,
           name: scenario.scenario,
@@ -220,8 +217,8 @@ export const POST = withApiHandler(async (request: Request) => {
         const errorMessage = error instanceof Error ? error.message : String(error);
         await dbService.updateTestConversationStatus(conversationId, 'failed', errorMessage);
         
-        const chat: TestChat = {
-          id: chatId,
+        const chat: Conversation = {
+          id: conversationId,
           scenarioName: scenario.scenario,
           personaName: personaId,
           name: scenario.scenario,
@@ -256,6 +253,9 @@ export const POST = withApiHandler(async (request: Request) => {
 
   for (const chat of completedChats) {
     const metricResults = chat.metrics.metricResults ?? [];
+
+    console.log("=======================");
+    console.log(metricResults);
     if (metricResults.length > 0) {
       await dbService.saveMetricResults(
         testRun.id,

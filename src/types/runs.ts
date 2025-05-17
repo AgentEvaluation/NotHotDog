@@ -1,5 +1,5 @@
 import { MessageRole } from "./base";
-import { TestChat } from "./chat";
+import { Conversation } from "./chat";
 
 interface Metrics {
   total: number;
@@ -21,7 +21,7 @@ export interface TestRun {
   timestamp: string;
   status: TestRunStatus;
   metrics: Metrics;
-  chats: TestChat[];
+  chats: Conversation[];
   results: Array<{ scenarioId: string; responseTime: number }>;
   agentId: string;
   createdBy: string;

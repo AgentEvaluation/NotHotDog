@@ -1,11 +1,11 @@
 export const runtime = 'edge';
 
+import { withApiHandler } from '@/lib/api-utils';
 import { ModelFactory } from '@/services/llm/modelfactory';
-import { AnthropicModel } from '@/services/llm/enums';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { RunnableSequence } from '@langchain/core/runnables';
-import { NextResponse } from 'next/server'
 import { JsonOutputParser } from '@langchain/core/output_parsers';
+import { ValidationError, ConfigurationError } from '@/lib/errors';
 
 const validationTemplate = ChatPromptTemplate.fromMessages([
   ["user", `You are a test validation system. Compare if the actual response matches the expected output semantically.
@@ -30,44 +30,37 @@ Focus on semantic meaning rather than exact wording. Consider:
 4. Similar level of specificity`]
 ]);
 
-
-export async function POST(req: Request) {
-  try {
-    const { actualResponse, expectedOutput } = await req.json()
-    const modelConfig = ModelFactory.getSelectedModelConfig();
-    if (!modelConfig) {
-      throw new Error('No LLM model configured. Please set up a model in settings.');
-    }
-
-    const model = ModelFactory.createLangchainModel(
-      modelConfig.id,
-      modelConfig.apiKey,
-      modelConfig.extraParams
-    );
-
-    const chain = RunnableSequence.from([
-      validationTemplate,
-      model,
-      new JsonOutputParser<{
-        isCorrect: boolean;
-        explanation: string;
-      }>()
-    ]);
-
-    const validation = await chain.invoke({
-      expectedOutput,
-      actualResponse
-    });
-
-    return NextResponse.json(validation);
-  } catch (error) {
-    console.error('Validation error:', error)
-    return NextResponse.json(
-      {
-        error: 'Failed to validate response',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    )
+export const POST = withApiHandler(async (req: Request) => {
+  const { actualResponse, expectedOutput } = await req.json();
+  
+  if (!actualResponse || !expectedOutput) {
+    throw new ValidationError("Missing required fields: actualResponse and expectedOutput");
   }
-} 
+  
+  const modelConfig = ModelFactory.getSelectedModelConfig();
+  if (!modelConfig) {
+    throw new ConfigurationError('No LLM model configured. Please set up a model in settings.');
+  }
+
+  const model = ModelFactory.createLangchainModel(
+    modelConfig.id,
+    modelConfig.apiKey,
+    modelConfig.extraParams
+  );
+
+  const chain = RunnableSequence.from([
+    validationTemplate,
+    model,
+    new JsonOutputParser<{
+      isCorrect: boolean;
+      explanation: string;
+    }>()
+  ]);
+
+  const validation = await chain.invoke({
+    expectedOutput,
+    actualResponse
+  });
+
+  return validation;
+});

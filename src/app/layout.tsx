@@ -4,6 +4,8 @@ import { ClerkProvider, SignInButton, SignedIn, SignedOut } from '@clerk/nextjs'
 import { ThemeProvider } from './providers'
 import CustomUserDropdown from "@/components/navigation/CustomUserDropdown";
 import SignupHandler from '@/components/authentication/SignupHandler';
+import ErrorBoundary from '@/components/common/ErrorBoundary';
+import { ErrorProvider } from '@/hooks/useErrorContext';
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -23,29 +25,33 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <header className="flex justify-between items-center p-4 border-b border-border bg-card">
-              <div>
-                <h1 className="text-xl font-bold text-orange-500">NotHotDog</h1>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mt-1">
-                  Agent Testing Framework
-                </p>
-              </div>
+            <ErrorBoundary>
+              <ErrorProvider>
+                <header className="flex justify-between items-center p-4 border-b border-border bg-card">
+                  <div>
+                    <h1 className="text-xl font-bold text-orange-500">NotHotDog</h1>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider mt-1">
+                      Agent Testing Framework
+                    </p>
+                  </div>
 
-              {/* User Avatar with Custom Dropdown */}
-              <div className="flex items-center">
-                <SignedOut>
-                  <SignInButton />
-                </SignedOut>
-                <SignedIn>
-                  <CustomUserDropdown />
-                </SignedIn>
-              </div>
-            </header>
-            
-          <main className="flex min-h-screen flex-col">
-            {children}
-          </main>
-        </ThemeProvider>
+                  {/* User Avatar with Custom Dropdown */}
+                  <div className="flex items-center">
+                    <SignedOut>
+                      <SignInButton />
+                    </SignedOut>
+                    <SignedIn>
+                      <CustomUserDropdown />
+                    </SignedIn>
+                  </div>
+                </header>
+                
+                <main className="flex min-h-screen flex-col">
+                  {children}
+                </main>
+              </ErrorProvider>
+            </ErrorBoundary>
+          </ThemeProvider>
       </body>
     </html>
   </ClerkProvider>

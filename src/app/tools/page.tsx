@@ -9,6 +9,8 @@ import AgentDescription from "@/components/tools/agentDescription";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import ErrorDisplay from "@/components/common/ErrorDisplay";
+import { useErrorContext } from "@/hooks/useErrorContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,9 +47,18 @@ export default function ToolsPage() {
   } = useAgentConfig();
 
   const [activeTab, setActiveTab] = useState("description");
+  const { error, clearError } = useErrorContext();
 
   return (
     <div className="relative min-h-screen p-6">
+      {error && (
+        <ErrorDisplay 
+          error={error} 
+          onDismiss={clearError}
+          className="mb-4"
+        />
+      )}
+      
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">Configure Agent</h2>
         <div className="flex gap-2">
@@ -83,7 +94,7 @@ export default function ToolsPage() {
             onChange={(e) => setTestName(e.target.value)}
             className="w-64 bg-background"
           />
-          <Button onClick={saveTest} disabled={!manualResponse || !testName}>
+          <Button onClick={saveTest} disabled={!manualResponse || !testName || loading}>
             {isEditMode ? "Update Test" : "Save Test"}
           </Button>
         </div>

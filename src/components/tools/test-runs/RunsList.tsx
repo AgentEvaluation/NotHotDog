@@ -7,16 +7,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Play, ChevronDown } from "lucide-react";
+import { Play, ChevronDown, RefreshCw } from "lucide-react";
 import { TestRun } from "@/types/runs";
-import { TestExecutionError } from "@/hooks/useTestExecution";
+import ErrorDisplay from "@/components/common/ErrorDisplay";
+import { useErrorContext } from "@/hooks/useErrorContext";
 
 interface RunsListProps {
   runs: TestRun[];
   onSelectRun: (run: TestRun) => void;
   savedAgentConfigs: Array<{ id: string, name: string }>;
   onExecuteTest: (testId: string) => void;
-  error: TestExecutionError | null;
+  isLoading?: boolean;
 }
 
 export default function RunsList({ 
@@ -24,27 +25,42 @@ export default function RunsList({
   onSelectRun, 
   savedAgentConfigs, 
   onExecuteTest,
-  error
+  isLoading = false
 }: RunsListProps) {
+  const { error, clearError } = useErrorContext();
+
   return (
     <div className="p-10 space-y-6 max-w-6xl mx-auto">
       {error && (
-        <div className="p-4 mb-4 text-red-600 bg-red-100 rounded">
-          {error.message}
-        </div>
+        <ErrorDisplay 
+          error={error}
+          onDismiss={clearError}
+          onRetry={error.retry ? () => error.retry?.() : undefined}
+          showRetry={!!error.retry}
+          className="mb-4"
+        />
       )}
       
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-semibold">Test Runs</h2>
-          <p className="text-sm text-muted-foreground">History of all test executions</p>
+          <p className="text-sm text-muted-foreground mt-1">History of all test executions</p>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button>
-              <Play className="w-4 h-4 mr-2" />
-              Run Test
-              <ChevronDown className="w-4 h-4 ml-2" />
+            <Button disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Running...
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4 mr-2" />
+                  Run Test
+                  <ChevronDown className="w-4 h-4 ml-2" />
+                </>
+              )}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="cursor-pointer">
@@ -54,6 +70,7 @@ export default function RunsList({
                   key={test.id}
                   onSelect={() => onExecuteTest(test.id)}
                   className="cursor-pointer"
+                  disabled={isLoading}
                 >
                   {test.name}
                 </DropdownMenuItem>
@@ -81,7 +98,15 @@ export default function RunsList({
             <div className="flex items-center gap-4">
               <div className="text-green-600 font-semibold">✓ {run.metrics.passed}</div>
               <div className="text-red-500 font-semibold">✗ {run.metrics.failed}</div>
-              <Badge>{run.status}</Badge>
+              <Badge 
+                variant={
+                  run.status === 'completed' ? 'outline' : 
+                  run.status === 'failed' ? 'destructive' : 
+                  'secondary'
+                }
+              >
+                {run.status}
+              </Badge>
             </div>
           </div>
         ))}

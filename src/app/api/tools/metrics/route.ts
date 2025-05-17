@@ -1,52 +1,43 @@
-import { NextResponse } from "next/server";
+import { withApiHandler } from '@/lib/api-utils';
 import { dbService } from "@/services/db";
 import { auth } from "@clerk/nextjs/server";
+import { AuthorizationError, ValidationError, NotFoundError } from '@/lib/errors';
 
-export async function GET() {
+export const GET = withApiHandler(async () => {
   const { userId } = await auth();
   
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    throw new AuthorizationError("Unauthorized");
   }
   
-  try {
-    const metrics = await dbService.getMetrics(userId);
-    return NextResponse.json(metrics);
-  } catch (error) {
-    console.error("Error fetching metrics:", error);
-    return NextResponse.json({ error: "Failed to fetch metrics" }, { status: 500 });
-  }
-}
+  const metrics = await dbService.getMetrics(userId);
+  return metrics;
+});
 
-export async function POST(request: Request) {
+export const POST = withApiHandler(async (request: Request) => {
   const { userId } = await auth();
   
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    throw new AuthorizationError("Unauthorized");
   }
 
-  try {
-    const profile = await dbService.getProfileByClerkId(userId);
-    if (!profile || !profile.org_id) {
-      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-    }
-
-    const metricData = await request.json();
-    
-    if (!metricData.name || !metricData.type || !metricData.criticality) {
-      return NextResponse.json({ error: "Missing required metric fields" }, { status: 400 });
-    }
-    
-    const newMetric = await dbService.createMetric({
-      ...metricData,
-      org_id: profile.org_id,
-      created_by: profile.id,
-      agentIds: metricData.agentIds || []
-    });
-    
-    return NextResponse.json(newMetric, { status: 201 });
-  } catch (error) {
-    console.error("Error creating metric:", error);
-    return NextResponse.json({ error: "Failed to create metric" }, { status: 500 });
+  const profile = await dbService.getProfileByClerkId(userId);
+  if (!profile || !profile.org_id) {
+    throw new NotFoundError("Profile not found");
   }
-}
+
+  const metricData = await request.json();
+  
+  if (!metricData.name || !metricData.type || !metricData.criticality) {
+    throw new ValidationError("Missing required metric fields");
+  }
+  
+  const newMetric = await dbService.createMetric({
+    ...metricData,
+    org_id: profile.org_id,
+    created_by: profile.id,
+    agentIds: metricData.agentIds || []
+  });
+  
+  return newMetric;
+});

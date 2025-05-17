@@ -5,6 +5,8 @@ import { useTestExecution } from "@/hooks/useTestExecution";
 import RunsList from "./RunsList";
 import RunDetail from "./RunDetail";
 import ChatDetail from "./ChatDetail";
+import WarningDialog from "@/components/config/WarningDialog";
+import { ModelFactory } from "@/services/llm/modelfactory";
 
 export function TestRunsDashboard() {
   const {
@@ -16,9 +18,20 @@ export function TestRunsDashboard() {
     savedAgentConfigs,
     executeTest,
     error,
+    clearError,
   } = useTestExecution();
 
   const [showWarningDialog, setShowWarningDialog] = useState(false);
+
+  // Handle model config issues
+  const handleExecuteTest = (testId: string) => {
+    const modelConfig = ModelFactory.getSelectedModelConfig();
+    if (!modelConfig) {
+      setShowWarningDialog(true);
+      return;
+    }
+    executeTest(testId);
+  };
 
   if (selectedChat) {
     return <ChatDetail 
@@ -32,17 +45,25 @@ export function TestRunsDashboard() {
       run={selectedRun} 
       onBack={() => setSelectedRun(null)}
       onSelectChat={setSelectedChat}
-      error={error}
     />;
   }
 
   return (
-    <RunsList 
-      runs={runs}
-      onSelectRun={setSelectedRun}
-      savedAgentConfigs={savedAgentConfigs}
-      onExecuteTest={executeTest}
-      error={error}
-    />
+    <>
+      <RunsList 
+        runs={runs}
+        onSelectRun={setSelectedRun}
+        savedAgentConfigs={savedAgentConfigs}
+        onExecuteTest={handleExecuteTest}
+        isLoading={false}
+      />
+
+      {showWarningDialog && (
+        <WarningDialog
+          isOpen={showWarningDialog}
+          onClose={() => setShowWarningDialog(false)}
+        />
+      )}
+    </>
   );
 }

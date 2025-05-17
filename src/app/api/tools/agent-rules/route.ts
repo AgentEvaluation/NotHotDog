@@ -1,50 +1,32 @@
-import { NextResponse } from "next/server";
+import { withApiHandler } from '@/lib/api-utils';
 import { dbService } from "@/services/db";
+import { ValidationError, NotFoundError } from '@/lib/errors';
 
-export async function GET(req: Request) {
+export const GET = withApiHandler(async (req: Request) => {
   const { searchParams } = new URL(req.url);
   const agentId = searchParams.get("agentId");
 
   if (!agentId) {
-    return NextResponse.json({ error: "Agent ID is required" }, { status: 400 });
+    throw new ValidationError("Agent ID is required");
   }
 
-  try {
-    const config = await dbService.getAgentConfigAll(agentId);
-    if (!config) {
-      return NextResponse.json({ error: "Config not found" }, { status: 404 });
-    }
-    return NextResponse.json(config.rules);
-  } catch (error) {
-    console.error("Failed to fetch rules:", error);
-    return NextResponse.json({ error: "Failed to fetch rules" }, { status: 500 });
+  const config = await dbService.getAgentConfigAll(agentId);
+  if (!config) {
+    throw new NotFoundError("Config not found");
   }
-}
+  
+  return config.rules;
+});
 
-export async function POST(req: Request) {
-  try {
-    const data = await req.json();
-    const { agentId, rules } = data;
+export const POST = withApiHandler(async (req: Request) => {
+  const data = await req.json();
+  const { agentId, rules } = data;
 
-    if (!agentId || !rules) {
-      return new NextResponse(
-        JSON.stringify({ error: "Agent ID and rules are required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    const updated = await dbService.updateValidationRules(agentId, rules);
-    const payload = { success: true, updated: updated || {} };
-
-    return new NextResponse(JSON.stringify(payload), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (error) {
-    console.error("Failed to save rules:", error);
-    return new NextResponse(
-      JSON.stringify({ error: "Failed to save rules" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+  if (!agentId || !rules) {
+    throw new ValidationError("Agent ID and rules are required");
   }
-}
+
+  const updated = await dbService.updateValidationRules(agentId, rules);
+  
+  return { success: true, updated: updated || {} };
+});

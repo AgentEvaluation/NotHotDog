@@ -24,6 +24,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { LLMServiceConfig } from "@/services/llm/types";
 import { ModelFactory } from "@/services/llm/modelfactory";
 import { Plus, Trash2 } from "lucide-react";
+import { useErrorContext } from "@/hooks/useErrorContext";
+import ErrorDisplay from "@/components/common/ErrorDisplay";
 
 interface ApiKeyConfigProps {
   isOpen: boolean;
@@ -33,13 +35,14 @@ interface ApiKeyConfigProps {
 export default function ApiKeyConfig({ isOpen, setIsOpen }: ApiKeyConfigProps) {
   const [configs, setConfigs] = useState<LLMServiceConfig[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string>("");
+  const errorContext = useErrorContext();
   
   // New model form state
   const [provider, setProvider] = useState<LLMProvider>(LLMProvider.Anthropic);
   const [modelId, setModelId] = useState<string>("");
   const [keyName, setKeyName] = useState<string>("");
   const [apiKey, setApiKey] = useState<string>("");
-  const [orgId, setOrgId] = useState<string>(""); // For OpenAI org ID
+  const [orgId, setOrgId] = useState<string>("");
   
   useEffect(() => {
     // Load saved configurations
@@ -54,49 +57,67 @@ export default function ApiKeyConfig({ isOpen, setIsOpen }: ApiKeyConfigProps) {
   }, [provider]);
 
   const handleSaveConfig = () => {
-    const newConfig: LLMServiceConfig = {
-      id: modelId,
-      provider,
-      name: MODEL_CONFIGS[modelId].name,
-      apiKey,
-      keyName,
-      extraParams: provider === LLMProvider.OpenAI && orgId ? { organization: orgId } : {}
-    };
-    
-    const updatedConfigs = [...configs, newConfig];
-    
-    // Save to localStorage
-    localStorage.setItem("model_configs", JSON.stringify(updatedConfigs));
-    
-    // If this is the first config, set it as selected
-    if (updatedConfigs.length === 1 || !selectedModelId) {
-      localStorage.setItem("selected_model_id", newConfig.id);
-      setSelectedModelId(newConfig.id);
+    try {
+      // Validate form
+      if (!modelId || !apiKey || !keyName) {
+        errorContext.showWarning("Please fill in all required fields");
+        return;
+      }
+
+      const newConfig: LLMServiceConfig = {
+        id: modelId,
+        provider,
+        name: MODEL_CONFIGS[modelId].name,
+        apiKey,
+        keyName,
+        extraParams: provider === LLMProvider.OpenAI && orgId ? { organization: orgId } : {}
+      };
+      
+      const updatedConfigs = [...configs, newConfig];
+      
+      // Save to localStorage
+      localStorage.setItem("model_configs", JSON.stringify(updatedConfigs));
+      
+      // If this is the first config, set it as selected
+      if (updatedConfigs.length === 1 || !selectedModelId) {
+        localStorage.setItem("selected_model_id", newConfig.id);
+        setSelectedModelId(newConfig.id);
+      }
+      
+      setConfigs(updatedConfigs);
+      resetForm();
+    } catch (error) {
+      errorContext.handleError(error);
     }
-    
-    setConfigs(updatedConfigs);
-    resetForm();
   };
   
   const handleSelectModel = (modelId: string) => {
-    localStorage.setItem("selected_model_id", modelId);
-    setSelectedModelId(modelId);
+    try {
+      localStorage.setItem("selected_model_id", modelId);
+      setSelectedModelId(modelId);
+    } catch (error) {
+      errorContext.handleError(error);
+    }
   };
   
   const handleDeleteConfig = (id: string) => {
-    const updatedConfigs = configs.filter(c => c.id !== id);
-    localStorage.setItem("model_configs", JSON.stringify(updatedConfigs));
-    
-    // If we're deleting the selected model, update selection
-    if (selectedModelId === id && updatedConfigs.length > 0) {
-      localStorage.setItem("selected_model_id", updatedConfigs[0].id);
-      setSelectedModelId(updatedConfigs[0].id);
-    } else if (updatedConfigs.length === 0) {
-      localStorage.removeItem("selected_model_id");
-      setSelectedModelId("");
+    try {
+      const updatedConfigs = configs.filter(c => c.id !== id);
+      localStorage.setItem("model_configs", JSON.stringify(updatedConfigs));
+      
+      // If we're deleting the selected model, update selection
+      if (selectedModelId === id && updatedConfigs.length > 0) {
+        localStorage.setItem("selected_model_id", updatedConfigs[0].id);
+        setSelectedModelId(updatedConfigs[0].id);
+      } else if (updatedConfigs.length === 0) {
+        localStorage.removeItem("selected_model_id");
+        setSelectedModelId("");
+      }
+      
+      setConfigs(updatedConfigs);
+    } catch (error) {
+      errorContext.handleError(error);
     }
-    
-    setConfigs(updatedConfigs);
   };
   
   const resetForm = () => {
@@ -112,6 +133,14 @@ export default function ApiKeyConfig({ isOpen, setIsOpen }: ApiKeyConfigProps) {
           <DialogTitle>LLM API Configuration</DialogTitle>
           <DialogClose className="absolute right-4 top-4" />
         </DialogHeader>
+        
+        {errorContext.error && (
+          <ErrorDisplay 
+            error={errorContext.error}
+            onDismiss={errorContext.clearError}
+            className="mb-4"
+          />
+        )}
         
         <Tabs defaultValue="models">
           <TabsList>
@@ -233,7 +262,7 @@ export default function ApiKeyConfig({ isOpen, setIsOpen }: ApiKeyConfigProps) {
               
               <Button 
                 onClick={handleSaveConfig}
-                disabled={!modelId || !apiKey || !keyName}
+                disabled={!modelId || !apiKey || !keyName || errorContext.isLoading}
                 className="w-full mt-4"
               >
                 <Plus className="h-4 w-4 mr-2" />

@@ -1,34 +1,24 @@
+import { withApiHandler } from "@/lib/api-utils";
 import { dbService } from "@/services/db";
-import { NextResponse } from "next/server";
+import { ValidationError, NotFoundError } from "@/lib/errors";
 
-export async function GET(request: Request) {
+export const GET = withApiHandler(async (request: Request) => {
   const { searchParams } = new URL(request.url);
   const clerkId = searchParams.get("clerkId");
+  
   if (!clerkId) {
-    return new NextResponse(
-      JSON.stringify({ error: "Clerk ID required" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
-    );
+    throw new ValidationError("Clerk ID required");
   }
 
-  try {
-    const profile = await dbService.getProfileByClerkId(clerkId);
-    if (!profile || !profile.org_id) {
-      return new NextResponse(
-        JSON.stringify({ error: "Profile not found" }),
-        { status: 404, headers: { "Content-Type": "application/json" } }
-      );
-    }
-    const organization = await dbService.getOrganization(profile.org_id);
-    return new NextResponse(
-      JSON.stringify({ profile, organization }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
-  } catch (error) {
-    console.error("Error loading user details:", error);
-    return new NextResponse(
-      JSON.stringify({ error: "Failed to load user details" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+  const profile = await dbService.getProfileByClerkId(clerkId);
+  if (!profile) {
+    return { profile: null, organization: null };
   }
-}
+  
+  if (!profile.org_id) {
+    return { profile, organization: null };
+  }
+  
+  const organization = await dbService.getOrganization(profile.org_id);
+  return { profile, organization };
+});

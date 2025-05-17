@@ -11,13 +11,14 @@ import { Persona } from "@/types"
 import { v4 as uuidv4 } from 'uuid';
 import ApiKeyConfig from "@/components/config/ApiKeyConfig"
 import { getModelConfigHeaders } from "@/utils/model-config-checker"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useErrorContext } from "@/hooks/useErrorContext"
+import ErrorDisplay from "@/components/common/ErrorDisplay"
 
 export default function PersonasScreen() {
   const [personas, setPersonas] = useState<Persona[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false)
+  const errorContext = useErrorContext()
 
   const [editingPersona, setEditingPersona] = useState<Persona | null>(null)
   const [isNewPersonaDialogOpen, setIsNewPersonaDialogOpen] = useState(false)
@@ -42,28 +43,22 @@ export default function PersonasScreen() {
   })
 
   useEffect(() => {
-    const fetchPersonas = async () => {
-      try {
-        setLoading(true)
-        const response = await fetch('/api/tools/personas')
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch personas')
-        }
-        
-        const data = await response.json()
-        setPersonas(data)
-      } catch (err) {
-        console.error('Error fetching personas:', err)
-        setError(err instanceof Error ? err.message : 'An error occurred')
-      } finally {
-        setLoading(false)
-      }
-    }
-  
     fetchPersonas()
   }, [])
 
+  const fetchPersonas = async () => {
+    await errorContext.withErrorHandling(async () => {
+      setLoading(true)
+      const response = await fetch('/api/tools/personas')
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch personas')
+      }
+      
+      const data = await response.json()
+      setPersonas(data.data)
+    }, true);
+  }
 
   const handleEditPersona = (persona: Persona) => {
     setEditingPersona({ ...persona })
@@ -81,14 +76,11 @@ export default function PersonasScreen() {
   }
 
   const handleCreatePersona = async () => {
-    try {
-      setLoading(true)
-
+    await errorContext.withErrorHandling(async () => {
       const headers = getModelConfigHeaders();
       if (!headers) {
-        setError("LLM model configuration required to generate personas");
+        errorContext.handleError(new Error("LLM model configuration required to generate personas"));
         setIsApiKeyModalOpen(true);
-        setLoading(false);
         return;
       }
 
@@ -104,8 +96,7 @@ export default function PersonasScreen() {
       }
       
       const createdPersona = await response.json()
-      setPersonas([...personas, createdPersona])
-      // Reset the newPersona state to initial values
+      setPersonas([...personas, createdPersona.data])
       setNewPersona({
         id: uuidv4(),
         name: "",
@@ -127,18 +118,11 @@ export default function PersonasScreen() {
         updatedAt: new Date()
       })
       setIsNewPersonaDialogOpen(false)
-    } catch (err) {
-      console.error('Error creating persona:', err)
-      setError(err instanceof Error ? err.message : 'An error occurred')
-    } finally {
-      setLoading(false)
-    }
+    }, true);
   }
   
-  // Update handleDeletePersona
   const handleDeletePersona = async (id: string) => {
-    try {
-      setLoading(true)
+    await errorContext.withErrorHandling(async () => {
       const response = await fetch(`/api/tools/personas/${id}`, {
         method: 'DELETE'
       })
@@ -148,12 +132,7 @@ export default function PersonasScreen() {
       }
       
       setPersonas(personas.filter(p => p.id !== id))
-    } catch (err) {
-      console.error('Error deleting persona:', err)
-      setError(err instanceof Error ? err.message : 'An error occurred')
-    } finally {
-      setLoading(false)
-    }
+    }, true);
   }
 
   return (
@@ -173,7 +152,7 @@ export default function PersonasScreen() {
           onCancel={() => setIsNewPersonaDialogOpen(false)}
           title="Create New Persona"
           buttonText="Create Persona"
-          isSaving={loading}
+          isSaving={errorContext.isLoading}
         >
           <Button onClick={() => setIsNewPersonaDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
@@ -182,10 +161,12 @@ export default function PersonasScreen() {
         </PersonaDialog>
       </div>
 
-      {error && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+      {errorContext.error && (
+        <ErrorDisplay 
+          error={errorContext.error} 
+          onDismiss={errorContext.clearError}
+          className="mb-4"
+        />
       )}
 
       <Tabs defaultValue="all" className="w-full">

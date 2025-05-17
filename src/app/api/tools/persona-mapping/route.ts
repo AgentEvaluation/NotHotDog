@@ -1,106 +1,56 @@
-// api/tools/persona-mapping/route.ts
-import { NextResponse } from "next/server";
+// src-app-api-tools-persona-mapping-route.ts
+import { withApiHandler } from "@/lib/api-utils";
 import { dbService } from "@/services/db";
-import { auth } from "@clerk/nextjs/server"
+import { auth } from "@clerk/nextjs/server";
+import { AuthorizationError, ValidationError } from "@/lib/errors";
 
-export async function GET(request: Request) {
+export const GET = withApiHandler(async (request: Request) => {
   const { userId } = await auth();
   if (!userId) {
-    return new NextResponse(
-      JSON.stringify({ error: "Unauthorized" }),
-      { status: 401, headers: { "Content-Type": "application/json" } }
-    );
+    throw new AuthorizationError("Unauthorized");
   }
   
   const { searchParams } = new URL(request.url);
   const agentId = searchParams.get("agentId");
   
   if (!agentId) {
-    return new NextResponse(
-      JSON.stringify({ error: "Agent ID required" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
-    );
+    throw new ValidationError("Agent ID required");
   }
   
-  try {
-    const mapping = await dbService.getPersonaMappingByAgentId(agentId);
-    return new NextResponse(
-      JSON.stringify(mapping),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
-  } catch (error) {
-    console.error("Error fetching persona mapping:", error);
-    return new NextResponse(
-      JSON.stringify({ error: "Failed to fetch persona mapping" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
-  }
-}
+  const mapping = await dbService.getPersonaMappingByAgentId(agentId);
+  return mapping;
+});
 
-export async function POST(request: Request) {
+export const POST = withApiHandler(async (request: Request) => {
   const { userId } = await auth();
   if (!userId) {
-    return new NextResponse(
-      JSON.stringify({ error: "Unauthorized" }),
-      { status: 401, headers: { "Content-Type": "application/json" } }
-    );
+    throw new AuthorizationError("Unauthorized");
   }
   
-  try {
-    const body = await request.json();
-    const { agentId, personaId } = body;
-    
-    if (!agentId || !personaId) {
-      return new NextResponse(
-        JSON.stringify({ error: "Agent ID and Persona ID required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
-    }
-    
-    const result = await dbService.createPersonaMapping(agentId, personaId);
-    return new NextResponse(
-      JSON.stringify(result),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
-  } catch (error) {
-    console.error("Error creating persona mapping:", error);
-    return new NextResponse(
-      JSON.stringify({ error: "Failed to create persona mapping" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+  const body = await request.json();
+  const { agentId, personaId } = body;
+  
+  if (!agentId || !personaId) {
+    throw new ValidationError("Agent ID and Persona ID required");
   }
-}
+  
+  const result = await dbService.createPersonaMapping(agentId, personaId);
+  return result;
+});
 
-export async function DELETE(request: Request) {
+export const DELETE = withApiHandler(async (request: Request) => {
   const { userId } = await auth();
   if (!userId) {
-    return new NextResponse(
-      JSON.stringify({ error: "Unauthorized" }),
-      { status: 401, headers: { "Content-Type": "application/json" } }
-    );
+    throw new AuthorizationError("Unauthorized");
   }
   
-  try {
-    const body = await request.json();
-    const { agentId, personaId } = body;
-    
-    if (!agentId || !personaId) {
-      return new NextResponse(
-        JSON.stringify({ error: "Agent ID and Persona ID required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
-    }
-    
-    const result = await dbService.deletePersonaMapping(agentId, personaId);
-    return new NextResponse(
-      JSON.stringify(result),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
-  } catch (error) {
-    console.error("Error deleting persona mapping:", error);
-    return new NextResponse(
-      JSON.stringify({ error: "Failed to delete persona mapping" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+  const body = await request.json();
+  const { agentId, personaId } = body;
+  
+  if (!agentId || !personaId) {
+    throw new ValidationError("Agent ID and Persona ID required");
   }
-}
+  
+  const result = await dbService.deletePersonaMapping(agentId, personaId);
+  return result;
+});

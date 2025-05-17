@@ -5,6 +5,7 @@ import { ResponseTime } from "@/components/tools/ResponseTime";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Rule } from "@/services/agents/claude/types";
+import { useErrorContext } from "@/hooks/useErrorContext";
 
 interface Props {
   manualResponse: string;
@@ -14,9 +15,12 @@ interface Props {
 }
 
 export default function AgentResponse({ manualResponse, responseTime, rules, setRules }: Props) {
+  const errorContext = useErrorContext();
+
   if (!manualResponse) {
     return null;
   }
+  
   return (
     <Card>
       <CardHeader>
@@ -61,17 +65,21 @@ export default function AgentResponse({ manualResponse, responseTime, rules, set
                             size="icon"
                             className="opacity-0 group-hover:opacity-100 transition-opacity ml-auto"
                             onClick={() => {
-                              const cleanValue = displayValue.replace(/[",]/g, '').trim();
-                              setRules(prev => [
-                                ...prev,
-                                {
-                                  id: crypto.randomUUID(),
-                                  path: fullPath,
-                                  condition: typeof value === 'number' ? '=' : 'contains',
-                                  value: cleanValue,
-                                  isValid: false,
-                                },
-                              ]);
+                              try {
+                                const cleanValue = displayValue.replace(/[",]/g, '').trim();
+                                setRules(prev => [
+                                  ...prev,
+                                  {
+                                    id: crypto.randomUUID(),
+                                    path: fullPath,
+                                    condition: typeof value === 'number' ? '=' : 'contains',
+                                    value: cleanValue,
+                                    isValid: false,
+                                  },
+                                ]);
+                              } catch (error) {
+                                errorContext.handleError(error);
+                              }
                             }}
                           >
                             <Plus className="h-3 w-3" />
@@ -88,7 +96,8 @@ export default function AgentResponse({ manualResponse, responseTime, rules, set
                     </div>
                   );
                 });
-              } catch (e) {
+              } catch (error) {
+                errorContext.handleError(error);
                 return <div className="p-4 text-destructive">Invalid JSON format</div>;
               }
             })()}
@@ -104,22 +113,34 @@ export default function AgentResponse({ manualResponse, responseTime, rules, set
 }
 
 function getJsonPath(obj: any, key: string, line: string): string {
-  const paths: string[] = [];
-  function traverse(current: any, currentPath: string[] = []) {
-    if (current && typeof current === 'object') {
-      Object.keys(current).forEach(k => {
-        const newPath = [...currentPath, k];
-        if (k === key) {
-          paths.push(newPath.join('.'));
-        }
-        traverse(current[k], newPath);
-      });
+  try {
+    const paths: string[] = [];
+    function traverse(current: any, currentPath: string[] = []) {
+      if (current && typeof current === 'object') {
+        Object.keys(current).forEach(k => {
+          const newPath = [...currentPath, k];
+          if (k === key) {
+            paths.push(newPath.join('.'));
+          }
+          traverse(current[k], newPath);
+        });
+      }
     }
+    traverse(obj);
+    return paths[0] || key;
+  } catch (error) {
+    // Using function scope for error handling
+    console.error("Error in getJsonPath:", error);
+    return key;
   }
-  traverse(obj);
-  return paths[0] || key;
 }
 
 function getValueFromPath(obj: any, path: string): any {
-  return path.split('.').reduce((current, key) => current?.[key], obj);
+  try {
+    return path.split('.').reduce((current, key) => current?.[key], obj);
+  } catch (error) {
+    // Using function scope for error handling
+    console.error("Error in getValueFromPath:", error);
+    return null;
+  }
 }

@@ -2,19 +2,17 @@ import { useEffect, useState } from 'react';
 import { ChatMessage, TestChat } from '@/types/chat';
 import { useTestRuns } from './useTestRuns';
 import { ModelFactory } from '@/services/llm/modelfactory';
-
+import { useErrorContext } from './useErrorContext';
+import ApiClient from '@/lib/api-client';
+import { withErrorHandling } from '@/utils/error-handlers';
 
 export type TestExecutionStatus = 'idle' | 'connecting' | 'running' | 'completed' | 'failed';
-export type TestExecutionError = {
-  message: string;
-  code?: string;
-  details?: string;
-};
 
 export function useTestExecution() {
   const { runs, addRun, updateRun, selectedRun, setSelectedRun } = useTestRuns();
+  const errorContext = useErrorContext();
+  
   const [status, setStatus] = useState<TestExecutionStatus>('idle');
-  const [error, setError] = useState<TestExecutionError | null>(null);
   const [progress, setProgress] = useState<{ completed: number; total: number }>({ completed: 0, total: 0 });
   const [currentMessages, setCurrentMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -23,65 +21,66 @@ export function useTestExecution() {
   const [savedAgentConfigs, setSavedAgentConfigs] = useState<Array<{ id: string, name: string }>>([]);
 
   useEffect(() => {
-    async function fetchAgents() {
-      try {
-        const res = await fetch("/api/tools/agent-config");
-        const data = await res.json();
-        setSavedAgentConfigs(data.map((cfg: any) => ({
-          id: cfg.id,
-          name: cfg.name
-        })));
-      } catch (err) {
-        console.error("Failed to fetch agent configs:", err);
-      }
-    }
-    fetchAgents();
-  }, []);
+    withErrorHandling(async () => {
+      const data = await ApiClient.get('/api/tools/agent-config');
+      setSavedAgentConfigs(data.map((cfg: any) => ({
+        id: cfg.id,
+        name: cfg.name
+      })));
+    }, errorContext)();
+  }, [errorContext]);
 
+  /**
+   * Executes a test for the given test ID
+   */
   const executeTest = async (testId: string) => {
-    setStatus('connecting');
-    setError(null);
+    return await withErrorHandling(
+      async () => {
+        // Clear any previous errors and set initial state
+        errorContext.clearError();
+        setStatus('connecting');
 
-    const modelConfig = ModelFactory.getSelectedModelConfig();
-    
-    if (!modelConfig) {
-      setStatus('failed');
-      setError({ message: "No LLM model configured. Please add a model in settings." });
-      return;
-    }
-    
-    try {
-      const response = await fetch('/api/tools/test-runs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Api-Key': modelConfig.apiKey,
-          'X-Model': modelConfig.id,
-          'X-Provider': modelConfig.provider,
-          ...(modelConfig.extraParams ? { 'X-Extra-Params': JSON.stringify(modelConfig.extraParams) } : {})
-        },
-        body: JSON.stringify({ testId }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to execute test');
+        // Validate model configuration
+        const modelConfig = ModelFactory.getSelectedModelConfig();
+        if (!modelConfig) {
+          throw errorContext.createError.configuration("No LLM model configured. Please add a model in settings.");
+        }
+        
+        const headers = ApiClient.getLLMHeaders();
+        if (!headers) {
+          throw errorContext.createError.configuration("Could not generate LLM headers. Please reconfigure your model.");
+        }
+        
+        // Update status to running
+        setStatus('running');
+        
+        // Execute the test run
+        const response = await ApiClient.post('/api/tools/test-runs', { testId }, { headers });
+        const completedRun = response.data || response;
+        
+        // Update status to completed
+        setStatus('completed');
+        
+        // Update the test runs list
+        addRun(completedRun);
+        
+        return completedRun;
+      },
+      errorContext,
+      {
+        onError: () => {
+          setStatus('failed');
+        }
       }
-      
-      setStatus('running');
-      
-      const completedRun = await response.json();
-      setStatus('completed');
-    } catch (error: any) {
-      console.error('Test execution failed:', error);
-      setStatus('failed');
-      setError({ message: error.message, details: error.stack });
-    }
+    )();
   };
 
+  /**
+   * Resets the test execution state
+   */
   const resetState = () => {
     setStatus('idle');
-    setError(null);
+    errorContext.clearError();
     setProgress({ completed: 0, total: 0 });
   };
 
@@ -89,7 +88,7 @@ export function useTestExecution() {
     executeTest,
     resetState,
     status,
-    error,
+    error: errorContext.error,
     progress,
     isExecuting: status === 'connecting' || status === 'running',
     currentMessages,
@@ -99,6 +98,8 @@ export function useTestExecution() {
     setSelectedRun,
     selectedChat,
     setSelectedChat,
-    savedAgentConfigs
+    savedAgentConfigs,
+    loading: errorContext.isLoading,
+    clearError: errorContext.clearError
   };
 }

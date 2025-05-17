@@ -11,8 +11,9 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import ScenarioFileUpload from "./ScenarioFileUpload";
 import { ModelFactory } from "@/services/llm/modelfactory";
 import { Switch } from "@/components/ui/switch";
-import { Power } from "lucide-react";
 import { TestCase } from "./types";
+import ErrorDisplay from "@/components/common/ErrorDisplay";
+import { useErrorContext } from "@/hooks/useErrorContext";
 
 interface EditingState {
   scenario: string;
@@ -30,15 +31,16 @@ export function TestCaseVariations({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showApiKeyWarning, setShowApiKeyWarning] = useState(false);
   const [showFileUploadDialog, setShowFileUploadDialog] = useState(false);
+  const errorContext = useErrorContext();
+  
   const { 
     variationData, 
-    loading, 
-    error, 
+    loading,
     addVariation,
     updateVariation,
     deleteVariation,
     toggleScenarioEnabled,
-    setLoading
+    variationData: cachedVariationData
   } = useTestVariations(selectedTestId);
   
   useEffect(() => {
@@ -54,7 +56,7 @@ export function TestCaseVariations({
   
   const generateTestCases = async () => {
     if (!selectedTestId) {
-      console.error("Missing selected test ID");
+      errorContext.handleError(new Error("Missing selected test ID"));
       return;
     }
 
@@ -64,32 +66,28 @@ export function TestCaseVariations({
       return;
     }
 
-    setLoading(true);
-
-    try {
+    await errorContext.withErrorHandling(async () => {
       const response = await fetch(`/api/tools/generate-tests`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-API-Key": modelConfig.apiKey || "",
-          "X-Model": modelConfig.id || "",
-          "X-Provider": modelConfig.provider || "",
-          ...(modelConfig.extraParams ? { "X-Extra-Params": JSON.stringify(modelConfig.extraParams) } : {})
+          "X-API-Key": modelConfig?.apiKey || "",
+          "X-Model": modelConfig?.id || "",
+          "X-Provider": modelConfig?.provider || "",
+          ...(modelConfig?.extraParams ? { "X-Extra-Params": JSON.stringify(modelConfig.extraParams) } : {})
         },
         body: JSON.stringify({ testId: selectedTestId }),
       });
 
-      const data = await response.json();
-      if (data.error) {
-        console.error("Generation error:", data.error);
-        return;
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to generate test cases");
       }
+      
+      const result = await response.json();
+      const data = result.data;
       setGeneratedCases(data.testCases);
-    } catch (error) {
-      console.error("Failed to generate test cases:", error);
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   const addNewTestCase = () => {
@@ -117,9 +115,8 @@ export function TestCaseVariations({
       expectedOutput: editingState.expectedOutput,
     };
 
-    const existsInServer =
-      variationData &&
-      variationData.testCases.some((tc) => tc.id === editingId);
+    const existsInServer = cachedVariationData &&
+      cachedVariationData.testCases.some((tc) => tc.id === editingId);
 
     const payload: TestVariation = {
       id: existsInServer ? editingId : crypto.randomUUID(),
@@ -129,7 +126,7 @@ export function TestCaseVariations({
       cases: [editedTestCase],
     };
 
-    try {
+    await errorContext.withErrorHandling(async () => {
       if (existsInServer) {
         await updateVariation(payload);
       } else {
@@ -145,12 +142,10 @@ export function TestCaseVariations({
         }
         return [...prev, editedTestCase];
       });
-    } catch (error) {
-      console.error("Failed to save edit:", error);
-    } finally {
+      
       setEditingId(null);
       setEditingState(null);
-    }
+    });
   };
 
   const toggleSelectCase = (id: string) => {
@@ -172,7 +167,7 @@ export function TestCaseVariations({
   const deleteTestCases = async (idsToDelete: string[]) => {
     if (!selectedTestId) return;
 
-    try {
+    await errorContext.withErrorHandling(async () => {
       await fetch('/api/tools/test-variations', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
@@ -190,9 +185,7 @@ export function TestCaseVariations({
         setEditingId(null);
         setEditingState(null);
       }
-    } catch (error) {
-      console.error("Failed to delete test cases:", error);
-    }
+    });
   };
 
   const startEditing = (testCase: TestCase) => {
@@ -204,8 +197,7 @@ export function TestCaseVariations({
   };
 
   const handleFileUpload = async (variation: TestVariation) => {
-    try {
-      setLoading(true);
+    await errorContext.withErrorHandling(async () => {
       await addVariation(variation);
       
       // Update local state with the new cases
@@ -219,11 +211,7 @@ export function TestCaseVariations({
         return [...newCases, ...prevCases];
       });
       setShowFileUploadDialog(false);
-    } catch (error) {
-      console.error("Failed to add uploaded test cases:", error);
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   const showBulkActions = generatedCases.length > 1 && selectedIds.length > 0;
@@ -234,12 +222,21 @@ export function TestCaseVariations({
         <CardTitle className="text-lg font-semibold">Test Case Variations</CardTitle>
       </CardHeader>
 
+      {errorContext.error && (
+        <div className="px-6 mb-4">
+          <ErrorDisplay 
+            error={errorContext.error} 
+            onDismiss={errorContext.clearError} 
+          />
+        </div>
+      )}
+
       <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        {loading && (
+        {loading || errorContext.isLoading ? (
           <div className="fixed inset-0 flex items-center justify-center bg-background bg-opacity-50 z-50">
             <Loading size="lg" message="Processing..." />
           </div>
-        )}
+        ) : null}
 
         {/* Left group: Add / Generate / Upload */}
         <div className="flex gap-2">
@@ -269,7 +266,7 @@ export function TestCaseVariations({
               <Button
                 size="sm"
                 onClick={generateTestCases}
-                disabled={loading}
+                disabled={loading || errorContext.isLoading}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Generate Scenarios
@@ -442,7 +439,7 @@ export function TestCaseVariations({
           </div>
         )}
 
-        {selectedTestId && generatedCases.length === 0 && !loading && (
+        {selectedTestId && generatedCases.length === 0 && !loading && !errorContext.isLoading && (
           <div className="text-center py-8 text-muted-foreground">
             No test cases yet. Generate or upload test cases to get started.
           </div>

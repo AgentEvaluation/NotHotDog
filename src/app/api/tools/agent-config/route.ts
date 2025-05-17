@@ -1,111 +1,101 @@
-import { NextResponse } from 'next/server';
+import { withApiHandler } from '@/lib/api-utils';
 import { auth } from '@clerk/nextjs/server';
 import { dbService } from '@/services/db';
+import { AuthorizationError, NotFoundError, ValidationError, ForbiddenError } from '@/lib/errors';
 
-export async function GET(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
-    const { userId } = await auth();
-
-    if (!userId) {
-      return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
-    }
-    const userProfile = await dbService.getProfileByClerkId(userId);
-    if (!userProfile || !userProfile.org_id) {
-      return NextResponse.json({ error: 'User organization not found' }, { status: 403 });
-    }
-    
-    if (id) {
-      const config = await dbService.getAgentConfigAll(id);
-      if (!config) {
-        return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
-      }
-      if (config.org_id !== userProfile.org_id) {
-        return NextResponse.json(
-          { error: 'User does not have access to this Agent' },
-          { status: 403 }
-        );
-      }
-      return NextResponse.json(config);
-    }
-
-    const configs = await dbService.getAgentConfigs(userId);
-    // const lightConfigs = configs.map((cfg: any) => ({ id: cfg.id, name: cfg.name }));
-    return NextResponse.json(configs);
-    
-  } catch (error) {
-    console.error('Error fetching agent configs:', error);
-
-  }
-}
-
-
-export async function POST(request: Request) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
-    }
-    const configData = await request.json();
-    const userProfile = await dbService.getProfileByClerkId(userId);
-    if (!userProfile || !userProfile.org_id) {
-      return NextResponse.json({ error: 'User organization not found' }, { status: 403 });
-    }
-    if (configData.org_id !== userProfile.org_id) {
-      return NextResponse.json({ error: 'User does not have access to this organization' }, { status: 403 });
-    }
-    const result = await dbService.saveAgentConfig(configData);
-    return NextResponse.json(result);
-  } catch (error) {
-    console.error('Error saving agent config:', error);
-    return NextResponse.json({ error: 'Failed to save agent config' }, { status: 500 });
-  }
-}
-
-export async function PUT(request: Request) {
+export const GET = withApiHandler(async (request: Request) => {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
   const { userId } = await auth();
+
   if (!userId) {
-    return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
+    throw new AuthorizationError('User not authenticated');
   }
-  const configData = await request.json();
-  if (!configData.id) {
-    return NextResponse.json({ error: 'Config ID is required' }, { status: 400 });
-  }
+  
   const userProfile = await dbService.getProfileByClerkId(userId);
   if (!userProfile || !userProfile.org_id) {
-    return NextResponse.json({ error: 'User organization not found' }, { status: 403 });
+    throw new ForbiddenError('User organization not found');
   }
+  
+  if (id) {
+    const config = await dbService.getAgentConfigAll(id);
+    if (!config) {
+      throw new NotFoundError('Agent not found');
+    }
+    if (config.org_id !== userProfile.org_id) {
+      throw new ForbiddenError('User does not have access to this Agent');
+    }
+    return config;
+  }
+
+  const configs = await dbService.getAgentConfigs(userId);
+  return configs;
+});
+
+export const POST = withApiHandler(async (request: Request) => {
+  const { userId } = await auth();
+  if (!userId) {
+    throw new AuthorizationError('User not authenticated');
+  }
+  
+  const configData = await request.json();
+  const userProfile = await dbService.getProfileByClerkId(userId);
+  if (!userProfile || !userProfile.org_id) {
+    throw new ForbiddenError('User organization not found');
+  }
+  
   if (configData.org_id !== userProfile.org_id) {
-    return NextResponse.json({ error: 'User does not have access to this organization' }, { status: 403 });
+    throw new ForbiddenError('User does not have access to this organization');
   }
+  
   const result = await dbService.saveAgentConfig(configData);
-  return NextResponse.json(result);
-}
+  return result;
+});
 
-export async function DELETE(request: Request) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
-    }
-    const { configId, org_id } = await request.json();
-    if (!configId) {
-      return NextResponse.json({ error: 'configId is required' }, { status: 400 });
-    }
-    const userProfile = await dbService.getProfileByClerkId(userId);
-    if (!userProfile || !userProfile.org_id) {
-      return NextResponse.json({ error: 'User organization not found' }, { status: 403 });
-    }
-    if (org_id !== userProfile.org_id) {
-      return NextResponse.json({ error: 'User does not have access to this organization' }, { status: 403 });
-    }    
-    const result = await dbService.deleteAgentConfig(configId);
-    return NextResponse.json(result);
-  } catch (error) {
-    console.error('Error deleting agent config:', error);
-    return NextResponse.json({ error: 'Failed to delete agent config' }, { status: 500 });
+export const PUT = withApiHandler(async (request: Request) => {
+  const { userId } = await auth();
+  if (!userId) {
+    throw new AuthorizationError('User not authenticated');
   }
-}
+  
+  const configData = await request.json();
+  if (!configData.id) {
+    throw new ValidationError('Config ID is required');
+  }
+  
+  const userProfile = await dbService.getProfileByClerkId(userId);
+  if (!userProfile || !userProfile.org_id) {
+    throw new ForbiddenError('User organization not found');
+  }
+  
+  if (configData.org_id !== userProfile.org_id) {
+    throw new ForbiddenError('User does not have access to this organization');
+  }
+  
+  const result = await dbService.saveAgentConfig(configData);
+  return result;
+});
 
-
+export const DELETE = withApiHandler(async (request: Request) => {
+  const { userId } = await auth();
+  if (!userId) {
+    throw new AuthorizationError('User not authenticated');
+  }
+  
+  const { configId, org_id } = await request.json();
+  if (!configId) {
+    throw new ValidationError('configId is required');
+  }
+  
+  const userProfile = await dbService.getProfileByClerkId(userId);
+  if (!userProfile || !userProfile.org_id) {
+    throw new ForbiddenError('User organization not found');
+  }
+  
+  if (org_id !== userProfile.org_id) {
+    throw new ForbiddenError('User does not have access to this organization');
+  }    
+  
+  const result = await dbService.deleteAgentConfig(configId);
+  return result;
+});

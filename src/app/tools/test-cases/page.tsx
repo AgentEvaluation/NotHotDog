@@ -5,34 +5,39 @@ import { Badge } from "@/components/ui/badge";
 import { TestCaseVariations } from "@/components/tools/TestCaseVariations";
 import { AgentConfig } from "@/types";
 import PersonaSelector from "@/components/tools/personaSelector";
-
+import { useErrorContext } from "@/hooks/useErrorContext";
+import ErrorDisplay from "@/components/common/ErrorDisplay";
 
 export default function TestCasesPage() {
   const [agentCases, setAgentCases] = useState<AgentConfig[]>([]);
   const [selectedCase, setSelectedCase] = useState<AgentConfig | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isMounted, setIsMounted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { error, clearError, handleError, withErrorHandling } = useErrorContext();
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   useEffect(() => {
-    const fetchSavedTests = async () => {
-      try {
-        const response = await fetch("/api/tools/agent-config");
-        if (!response.ok) {
-          throw new Error("Failed to fetch saved tests");
-        }
-        const data = await response.json();
-        setAgentCases(data);
-      } catch (error) {
-        console.error("Error fetching saved tests:", error);
-      }
-    };
-  
     fetchSavedTests();
   }, []);
+  
+  const fetchSavedTests = async () => {
+    await withErrorHandling(async () => {
+      setLoading(true);
+      const response = await fetch("/api/tools/agent-config");
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to fetch saved tests");
+      }
+      
+      const data = await response.json();
+      setAgentCases(data.data);
+    }, true);
+  };
   
   const handleCaseSelect = (test: AgentConfig) => {
     setSelectedCase(test);
@@ -54,14 +59,21 @@ export default function TestCasesPage() {
     }
   };
 
-  const showBulkActions = agentCases.length > 1 && selectedIds.length > 0;
-
   if (!isMounted) {
     return null;
   }
 
   return (
     <div className="grid grid-cols-12 gap-4 p-6 h-screen">
+      {error && (
+        <div className="col-span-12 mb-4">
+          <ErrorDisplay 
+            error={error} 
+            onDismiss={clearError} 
+          />
+        </div>
+      )}
+      
       <div className="col-span-4">
         <Card className="bg-card text-card-foreground border border-border overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent h-screen">
           <CardHeader className="pb-3">
@@ -70,8 +82,6 @@ export default function TestCasesPage() {
               <Badge variant="outline" className="bg-background">
                 {agentCases.length} Cases
               </Badge>
-            </div>
-            <div className="flex mt-2">
             </div>
           </CardHeader>
 
@@ -117,12 +127,10 @@ export default function TestCasesPage() {
         </Card>
       </div>
 
-      {/* Persona Selector Column moved to the middle */}
       <div className="col-span-4">
         <TestCaseVariations selectedTestId={selectedCase?.id || ""} />
       </div>
 
-      {/* Test Case Variations Column moved to the right */}
       <div className="col-span-4">
         <PersonaSelector selectedTest={selectedCase?.id || ""} />
       </div>

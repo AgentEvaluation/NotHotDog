@@ -1,10 +1,11 @@
-import { NextResponse } from 'next/server';
+import { withApiHandler } from '@/lib/api-utils';
 import { jsonrepair } from 'jsonrepair';
 import { AnthropicModel, LLMProvider } from '@/services/llm/enums';
 import { ModelFactory } from '@/services/llm/modelfactory';
 import { TEST_CASES_PROMPT } from '@/services/prompts';
 import { dbService } from '@/services/db';
 import { Evaluation } from '@/types/test-sets';
+import { ValidationError, NotFoundError, ConfigurationError } from '@/lib/errors';
 
 function extractJSON(text: string): any {
   try {
@@ -63,102 +64,93 @@ function isValidEvaluation(evaluation: any): evaluation is Evaluation {
   );
 }
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const testId = body.testId;
+export const POST = withApiHandler(async (req: Request) => {
+  const body = await req.json();
+  const testId = body.testId;
 
-    if (!testId) {
-      return NextResponse.json({ error: "Missing testId" }, { status: 400 });
-    }
+  if (!testId) {
+    throw new ValidationError("Missing testId");
+  }
 
-    const agentConfig = await dbService.getAgentConfig(testId);
-    if (!agentConfig) {
-      return NextResponse.json({ error: "Agent config not found" }, { status: 404 });
-    }
+  const agentConfig = await dbService.getAgentConfig(testId);
+  if (!agentConfig) {
+    throw new NotFoundError("Agent config not found");
+  }
 
-    const agentDescription = agentConfig.agentDescription || "Not provided";
-    const userDescription = agentConfig.userDescription || "Not provided";
+  const agentDescription = agentConfig.agentDescription || "Not provided";
+  const userDescription = agentConfig.userDescription || "Not provided";
 
-    const apiKey = req.headers.get("x-api-key");
-    const modelId = req.headers.get("x-model") || AnthropicModel.Sonnet3_5;
-    const provider = req.headers.get("x-provider") || LLMProvider.Anthropic;
-    const extraParamsStr = req.headers.get("x-extra-params");
-    
-    let extraParams = {};
-    if (extraParamsStr) {
-      try {
-        extraParams = JSON.parse(extraParamsStr);
-      } catch (e) {
-        console.error("Failed to parse extra params", e);
-      }
-    }
-    
-    if (!apiKey) {
-      return NextResponse.json({ error: "API key required" }, { status: 401 });
-    }
-
-    const model = ModelFactory.createLangchainModel(modelId, apiKey, extraParams);
-
-    const context = `Agent Description: ${agentDescription}
-User Description: ${userDescription}`;
-
-    const prompt = TEST_CASES_PROMPT.replace("{context}", context);
-
-    const response = await model.invoke([
-      {
-        role: "user",
-        content: prompt as string,
-      },
-    ]);
-
-    let evaluations = extractJSON(response.content as string);
-
-    if (!evaluations?.evaluations || !Array.isArray(evaluations.evaluations)) {
-      evaluations = { evaluations: [] };
-    }
-
-    const validEvaluations = evaluations.evaluations
-      .filter(isValidEvaluation)
-      .map((evaluation: Evaluation) => ({
-        scenario: evaluation.scenario.trim(),
-        expectedOutput: evaluation.expectedOutput.trim(),
-      }));
-
-    if (validEvaluations.length === 0) {
-      return NextResponse.json({ error: "No valid test cases generated" }, { status: 500 });
-    }
-
-    const variation = {
-      id: crypto.randomUUID(),
-      testId,
-      sourceTestId: testId,
-      timestamp: new Date().toISOString(),
-      cases: validEvaluations.map((evaluation: Evaluation) => ({
-        id: crypto.randomUUID(),
-        sourceTestId: testId,
-        scenario: evaluation.scenario,
-        expectedOutput: evaluation.expectedOutput,
-      })),
-    };
-
-    await dbService.createTestVariation(variation);
-
-    return NextResponse.json({
-      testCases: variation.cases,
-      stats: {
-        total: evaluations.evaluations.length,
-        valid: validEvaluations.length,
-        filtered: evaluations.evaluations.length - validEvaluations.length,
-      },
-    });
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      console.error("Test generation error:", error);
-      return NextResponse.json({ error: "Failed to generate evaluations", details: error.message }, { status: 500 });
-    } else {
-      console.error("Test generation error:", error);
-      return NextResponse.json({ error: "Failed to generate evaluations", details: "Unknown error" }, { status: 500 });
+  const apiKey = req.headers.get("x-api-key");
+  const modelId = req.headers.get("x-model") || AnthropicModel.Sonnet3_5;
+  const provider = req.headers.get("x-provider") || LLMProvider.Anthropic;
+  const extraParamsStr = req.headers.get("x-extra-params");
+  
+  let extraParams = {};
+  if (extraParamsStr) {
+    try {
+      extraParams = JSON.parse(extraParamsStr);
+    } catch (e) {
+      throw new ValidationError("Failed to parse extra params: " + 
+        (e instanceof Error ? e.message : String(e)));
     }
   }
-}
+  
+  if (!apiKey) {
+    throw new ConfigurationError("API key required");
+  }
+
+  const model = ModelFactory.createLangchainModel(modelId, apiKey, extraParams);
+
+  const context = `Agent Description: ${agentDescription}
+User Description: ${userDescription}`;
+
+  const prompt = TEST_CASES_PROMPT.replace("{context}", context);
+
+  const response = await model.invoke([
+    {
+      role: "user",
+      content: prompt as string,
+    },
+  ]);
+
+  let evaluations = extractJSON(response.content as string);
+
+  if (!evaluations?.evaluations || !Array.isArray(evaluations.evaluations)) {
+    evaluations = { evaluations: [] };
+  }
+
+  const validEvaluations = evaluations.evaluations
+    .filter(isValidEvaluation)
+    .map((evaluation: Evaluation) => ({
+      scenario: evaluation.scenario.trim(),
+      expectedOutput: evaluation.expectedOutput.trim(),
+    }));
+
+  if (validEvaluations.length === 0) {
+    throw new ValidationError("No valid test cases generated");
+  }
+
+  const variation = {
+    id: crypto.randomUUID(),
+    testId,
+    sourceTestId: testId,
+    timestamp: new Date().toISOString(),
+    cases: validEvaluations.map((evaluation: Evaluation) => ({
+      id: crypto.randomUUID(),
+      sourceTestId: testId,
+      scenario: evaluation.scenario,
+      expectedOutput: evaluation.expectedOutput,
+    })),
+  };
+
+  await dbService.createTestVariation(variation);
+
+  return {
+    testCases: variation.cases,
+    stats: {
+      total: evaluations.evaluations.length,
+      valid: validEvaluations.length,
+      filtered: evaluations.evaluations.length - validEvaluations.length,
+    },
+  };
+});

@@ -27,6 +27,7 @@ export default function AgentRules({ manualResponse, rules, setRules, agentId }:
       path,
       condition: "=",
       value: "",
+      isValid: true, // Add the isValid property
     }
     setRules([...rules, newRule])
   }
@@ -308,11 +309,11 @@ export default function AgentRules({ manualResponse, rules, setRules, agentId }:
           </div>
         )}
 
-        {manualResponse && (
+        {/* {manualResponse && (
           <Button variant="outline" size="sm" onClick={() => addRule()} className="w-full mt-2">
             <Plus className="h-3.5 w-3.5 mr-1" /> Add Custom Rule
           </Button>
-        )}
+        )} */}
       </CardContent>
     </Card>
   )

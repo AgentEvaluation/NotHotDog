@@ -1,74 +1,60 @@
-import { NextResponse } from "next/server";
+import { withApiHandler } from '@/lib/api-utils';
 import { dbService } from "@/services/db";
 import { auth } from "@clerk/nextjs/server";
+import { AuthorizationError, ValidationError, NotFoundError } from '@/lib/errors';
 
-export async function GET(
+export const GET = withApiHandler(async (
   request: Request,
-   context: { params: Promise<{ id: string }> }
-) {
+  context: { params: Promise<{ id: string }> }
+) => {
   const { id } = await context.params;
   const { userId } = await auth();
   
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    throw new AuthorizationError("Unauthorized");
   }
 
-  try {
-    const metric = await dbService.getMetricById(id);
-    if (!metric) {
-      return NextResponse.json({ error: "Metric not found" }, { status: 404 });
-    }
-    return NextResponse.json(metric);
-  } catch (error) {
-    console.error("Error fetching metric:", error);
-    return NextResponse.json({ error: "Failed to fetch metric" }, { status: 500 });
+  const metric = await dbService.getMetricById(id);
+  if (!metric) {
+    throw new NotFoundError("Metric not found");
   }
-}
+  
+  return metric;
+});
 
-export async function PUT(
+export const PUT = withApiHandler(async (
   request: Request,
-   context: { params: Promise<{ id: string }> }
-) {
+  context: { params: Promise<{ id: string }> }
+) => {
   const { id } = await context.params;
   const { userId } = await auth();
   
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    throw new AuthorizationError("Unauthorized");
   }
 
-  try {
-    const metricData = await request.json();
-    
-    // Basic validation for required fields
-    if (!metricData.name || !metricData.type || !metricData.criticality) {
-      return NextResponse.json({ error: "Missing required metric fields" }, { status: 400 });
-    }
-    
-    const updatedMetric = await dbService.updateMetric(id, metricData);
-    
-    return NextResponse.json(updatedMetric);
-  } catch (error) {
-    console.error("Error updating metric:", error);
-    return NextResponse.json({ error: "Failed to update metric" }, { status: 500 });
+  const metricData = await request.json();
+  
+  // Basic validation for required fields
+  if (!metricData.name || !metricData.type || !metricData.criticality) {
+    throw new ValidationError("Missing required metric fields");
   }
-}
+  
+  const updatedMetric = await dbService.updateMetric(id, metricData);
+  return updatedMetric;
+});
 
-export async function DELETE(
+export const DELETE = withApiHandler(async (
   request: Request,
-   context: { params: Promise<{ id: string }> }
-) {
+  context: { params: Promise<{ id: string }> }
+) => {
   const { id } = await context.params;
   const { userId } = await auth();
   
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    throw new AuthorizationError("Unauthorized");
   }
 
-  try {
-    await dbService.deleteMetric(id);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error deleting metric:", error);
-    return NextResponse.json({ error: "Failed to delete metric" }, { status: 500 });
-  }
-}
+  await dbService.deleteMetric(id);
+  return { success: true };
+});

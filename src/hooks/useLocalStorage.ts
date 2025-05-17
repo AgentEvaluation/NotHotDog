@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useErrorContext } from '@/hooks/useErrorContext';
 
 export function useLocalStorage<T>(key: string, initialValue: T) {
+  const errorContext = useErrorContext();
   const [storedValue, setStoredValue] = useState<T>(() => {
     if (typeof window === 'undefined') return initialValue;
     
@@ -8,20 +10,20 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
       const item = window.localStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
     } catch (error) {
-      console.error(error);
+      errorContext.handleError(error);
       return initialValue;
     }
   });
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     try {
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(key, JSON.stringify(storedValue));
-      }
+      window.localStorage.setItem(key, JSON.stringify(storedValue));
     } catch (error) {
-      console.error(error);
+      errorContext.handleError(error);
     }
-  }, [key, storedValue]);
+  }, [key, storedValue, errorContext]);
 
   return [storedValue, setStoredValue] as const;
 }

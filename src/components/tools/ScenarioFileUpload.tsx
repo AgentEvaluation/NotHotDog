@@ -7,6 +7,8 @@ import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
 import { TestVariation } from "@/types/variations";
 import { v4 as uuidv4 } from 'uuid';
+import { useErrorContext } from '@/hooks/useErrorContext';
+import ErrorDisplay from '@/components/common/ErrorDisplay';
 
 interface ScenarioFileUploadProps {
   selectedTestId: string;
@@ -22,9 +24,10 @@ const SAMPLE_CSV_DATA = `scenario,expectedOutput
 
 const ScenarioFileUpload: React.FC<ScenarioFileUploadProps> = ({ selectedTestId, onFileProcessed, onClose }) => {
   const [file, setFile] = useState<File | null>(null);
-  const [validationMessage, setValidationMessage] = useState<{ type: 'error' | 'success' | 'info', message: string } | null>(null);
+  const [validationMessage, setValidationMessage] = useState<{ type: 'success' | 'info', message: string } | null>(null);
   const [parsedData, setParsedData] = useState<{ scenario: string, expectedOutput: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const errorContext = useErrorContext();
 
   const resetState = () => {
     setFile(null);
@@ -36,15 +39,18 @@ const ScenarioFileUpload: React.FC<ScenarioFileUploadProps> = ({ selectedTestId,
   };
 
   const downloadSample = () => {
-    const blob = new Blob([SAMPLE_CSV_DATA], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'sample_scenarios.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    errorContext.withErrorHandling(async () => {
+      const blob = new Blob([SAMPLE_CSV_DATA], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'sample_scenarios.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      return Promise.resolve();
+    });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,6 +60,7 @@ const ScenarioFileUpload: React.FC<ScenarioFileUploadProps> = ({ selectedTestId,
       
       // Reset validation message
       setValidationMessage(null);
+      errorContext.clearError();
       
       // Process file based on type
       const fileType = selectedFile.name.split('.').pop()?.toLowerCase();
@@ -63,65 +70,61 @@ const ScenarioFileUpload: React.FC<ScenarioFileUploadProps> = ({ selectedTestId,
       } else if (fileType === 'xlsx' || fileType === 'xls') {
         processExcel(selectedFile);
       } else {
-        setValidationMessage({
-          type: 'error',
-          message: 'Unsupported file type. Please upload a CSV or Excel file.'
-        });
+        errorContext.handleError(new Error('Unsupported file type. Please upload a CSV or Excel file.'));
       }
     }
   };
 
   const processCSV = (file: File) => {
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      dynamicTyping: true,
-      complete: (results) => validateAndProcessData(results.data),
-      error: (error) => {
-        setValidationMessage({
-          type: 'error',
-          message: `Error parsing CSV: ${error.message}`
-        });
-      }
+    errorContext.withErrorHandling(async () => {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        dynamicTyping: true,
+        complete: (results) => validateAndProcessData(results.data),
+        error: (error) => {
+          errorContext.handleError(new Error(`Error parsing CSV: ${error.message}`));
+        }
+      });
+      return Promise.resolve();
     });
   };
 
   const processExcel = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = e.target?.result;
-        if (!data) throw new Error("Failed to read file");
+    errorContext.withErrorHandling(async () => {
+      const reader = new FileReader();
+      
+      return new Promise<void>((resolve, reject) => {
+        reader.onload = (e) => {
+          try {
+            const data = e.target?.result;
+            if (!data) throw new Error("Failed to read file");
+            
+            const workbook = XLSX.read(data, { type: 'binary' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+            
+            validateAndProcessData(jsonData);
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        };
         
-        const workbook = XLSX.read(data, { type: 'binary' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        reader.onerror = () => {
+          reject(new Error('Error reading file'));
+        };
         
-        validateAndProcessData(jsonData);
-      } catch (error) {
-        setValidationMessage({
-          type: 'error',
-          message: `Error parsing Excel file: ${error instanceof Error ? error.message : String(error)}`
-        });
-      }
-    };
-    reader.onerror = () => {
-      setValidationMessage({
-        type: 'error',
-        message: 'Error reading file'
+        reader.readAsBinaryString(file);
       });
-    };
-    reader.readAsBinaryString(file);
+    });
   };
 
   const validateAndProcessData = (data: any[]) => {
     // Check if data exists
     if (!data || data.length === 0) {
-      setValidationMessage({
-        type: 'error',
-        message: 'File is empty or contains no valid data'
-      });
+      errorContext.handleError(new Error('File is empty or contains no valid data'));
       return;
     }
 
@@ -131,10 +134,7 @@ const ScenarioFileUpload: React.FC<ScenarioFileUploadProps> = ({ selectedTestId,
     const hasExpectedOutputColumn = 'expectedOutput' in firstRow || 'ExpectedOutput' in firstRow || 'expected_output' in firstRow || 'Expected Output' in firstRow;
 
     if (!hasScenarioColumn || !hasExpectedOutputColumn) {
-      setValidationMessage({
-        type: 'error',
-        message: 'File must contain "scenario" and "expectedOutput" columns'
-      });
+      errorContext.handleError(new Error('File must contain "scenario" and "expectedOutput" columns'));
       return;
     }
 
@@ -147,10 +147,7 @@ const ScenarioFileUpload: React.FC<ScenarioFileUploadProps> = ({ selectedTestId,
     }).filter(row => row.scenario && row.expectedOutput); // Filter out rows with empty values
 
     if (normalizedData.length === 0) {
-      setValidationMessage({
-        type: 'error',
-        message: 'No valid scenarios found in file'
-      });
+      errorContext.handleError(new Error('No valid scenarios found in file'));
       return;
     }
 
@@ -162,25 +159,27 @@ const ScenarioFileUpload: React.FC<ScenarioFileUploadProps> = ({ selectedTestId,
   };
 
   const handleProceed = () => {
-    if (parsedData.length === 0 || !selectedTestId) {
-      return;
-    }
+    errorContext.withErrorHandling(async () => {
+      if (parsedData.length === 0 || !selectedTestId) {
+        return;
+      }
 
-    const timestamp = new Date().toISOString();
-    const newVariation: TestVariation = {
-      id: uuidv4(),
-      testId: selectedTestId,
-      sourceTestId: selectedTestId,
-      timestamp,
-      cases: parsedData.map(item => ({
+      const timestamp = new Date().toISOString();
+      const newVariation: TestVariation = {
         id: uuidv4(),
+        testId: selectedTestId,
         sourceTestId: selectedTestId,
-        scenario: item.scenario,
-        expectedOutput: item.expectedOutput
-      }))
-    };
+        timestamp,
+        cases: parsedData.map(item => ({
+          id: uuidv4(),
+          sourceTestId: selectedTestId,
+          scenario: item.scenario,
+          expectedOutput: item.expectedOutput
+        }))
+      };
 
-    onFileProcessed(newVariation);
+      await onFileProcessed(newVariation);
+    });
   };
 
   return (
@@ -192,6 +191,14 @@ const ScenarioFileUpload: React.FC<ScenarioFileUploadProps> = ({ selectedTestId,
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {errorContext.error && (
+          <ErrorDisplay 
+            error={errorContext.error}
+            onDismiss={errorContext.clearError}
+            className="mb-4"
+          />
+        )}
+
         <div className="flex justify-center">
           <Button 
             variant="outline" 
@@ -233,8 +240,7 @@ const ScenarioFileUpload: React.FC<ScenarioFileUploadProps> = ({ selectedTestId,
         </div>
 
         {validationMessage && (
-          <Alert variant={validationMessage.type === 'error' ? 'destructive' : 'default'}>
-            {validationMessage.type === 'error' && <AlertCircle className="h-4 w-4" />}
+          <Alert variant={validationMessage.type === 'success' ? 'default' : 'default'}>
             {validationMessage.type === 'success' && <Check className="h-4 w-4" />}
             <AlertDescription>
               {validationMessage.message}
@@ -278,6 +284,7 @@ const ScenarioFileUpload: React.FC<ScenarioFileUploadProps> = ({ selectedTestId,
           variant="outline" 
           onClick={() => {
             resetState();
+            errorContext.clearError();
             onClose();
           }}
         >
@@ -285,9 +292,16 @@ const ScenarioFileUpload: React.FC<ScenarioFileUploadProps> = ({ selectedTestId,
         </Button>
         <Button 
           onClick={handleProceed}
-          disabled={parsedData.length === 0}
+          disabled={parsedData.length === 0 || errorContext.isLoading}
         >
-          Add Scenarios
+          {errorContext.isLoading ? (
+            <>
+              <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent"></span>
+              Adding...
+            </>
+          ) : (
+            "Add Scenarios"
+          )}
         </Button>
       </CardFooter>
     </Card>

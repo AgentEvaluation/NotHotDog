@@ -8,16 +8,16 @@ import { Input } from "@/components/ui/input"
 import MetricsTable from "./MetricsTable"
 import MetricFormDialog from "./MetricFormDialog"
 import { Criticality, Metric, MetricType } from "@/types"
+import { useErrorContext } from "@/hooks/useErrorContext"
+import ErrorDisplay from "@/components/common/ErrorDisplay"
 
 export default function MetricsPage() {
-
   const [metrics, setMetrics] = useState<Metric[]>([])
   const [selectedRows, setSelectedRows] = useState<string[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState("all")
-  const [loading, setLoading] = useState(true)
-
+  const errorContext = useErrorContext()
 
   const initialFormState = {
     name: "",
@@ -35,19 +35,13 @@ export default function MetricsPage() {
     fetchMetrics()
   }, [])
 
-  // Add fetchMetrics function
   const fetchMetrics = async () => {
-    setLoading(true)
-    try {
+    await errorContext.withErrorHandling(async () => {
       const res = await fetch('/api/tools/metrics')
       if (!res.ok) throw new Error('Failed to fetch metrics')
       const data = await res.json()
-      setMetrics(data)
-    } catch (error) {
-      console.error('Error fetching metrics:', error)
-    } finally {
-      setLoading(false)
-    }
+      setMetrics(data.data)
+    });
   }
 
   // Filter metrics based on search query and active tab
@@ -77,8 +71,7 @@ export default function MetricsPage() {
   }
 
   const handleDeleteMetrics = async () => {
-    try {
-      setLoading(true)
+    await errorContext.withErrorHandling(async () => {
       for (const id of selectedRows) {
         await fetch(`/api/tools/metrics/${id}`, { 
           method: 'DELETE' 
@@ -87,34 +80,25 @@ export default function MetricsPage() {
       
       await fetchMetrics()
       setSelectedRows([])
-    } catch (error) {
-      console.error('Error deleting metrics:', error)
-    } finally {
-      setLoading(false)
-    }
+    });
   }
 
   const handleDeleteSingleMetric = async (id: string) => {
-    try {
-      setLoading(true)
+    await errorContext.withErrorHandling(async () => {
       await fetch(`/api/tools/metrics/${id}`, {
         method: 'DELETE'
       })
       await fetchMetrics()
-    } catch (error) {
-      console.error('Error deleting metric:', error)
-    } finally {
-      setLoading(false)
-    }
+    });
   }
 
   const handleEditMetric = async (id: string) => {
-    try {
-      setLoading(true)
+    await errorContext.withErrorHandling(async () => {
       const res = await fetch(`/api/tools/metrics/${id}`)
       if (!res.ok) throw new Error('Failed to fetch metric details')
       
-      const metricToEdit = await res.json()
+      const result = await res.json()
+      const metricToEdit = result.data;
       setFormData({
         name: metricToEdit.name,
         description: metricToEdit.description || "",
@@ -125,17 +109,11 @@ export default function MetricsPage() {
       })
       setEditingMetric(id)
       setIsModalOpen(true)
-    } catch (error) {
-      console.error('Error fetching metric to edit:', error)
-    } finally {
-      setLoading(false)
-    }
+    });
   }
 
   const handleSaveMetric = async () => {
-    try {
-      setLoading(true)
-      
+    await errorContext.withErrorHandling(async () => {
       if (editingMetric) {
         await fetch(`/api/tools/metrics/${editingMetric}`, {
           method: 'PUT',
@@ -155,11 +133,7 @@ export default function MetricsPage() {
       setFormData(initialFormState)
       setEditingMetric(null)
       setIsModalOpen(false)
-    } catch (error) {
-      console.error('Error saving metric:', error)
-    } finally {
-      setLoading(false)
-    }
+    });
   }
 
   return (
@@ -189,6 +163,15 @@ export default function MetricsPage() {
               </Button>
             </div>
           </div>
+
+          {/* Display any errors */}
+          {errorContext.error && (
+            <ErrorDisplay 
+              error={errorContext.error} 
+              onDismiss={errorContext.clearError}
+              className="mb-4"
+            />
+          )}
 
           {/* Table + Search + Tabs */}
           <div className="grid gap-4">
@@ -233,13 +216,13 @@ export default function MetricsPage() {
               </CardHeader>
 
               <CardContent className="p-0">
-              {loading && (
+              {errorContext.isLoading && (
                 <div className="flex justify-center items-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
               )}
                 {/* Metrics Table */}
-                {!loading && (
+                {!errorContext.isLoading && (
                   <MetricsTable
                     metrics={filteredMetrics}
                     selectedRows={selectedRows}
@@ -271,5 +254,3 @@ export default function MetricsPage() {
     </div>
   )
 }
-
-

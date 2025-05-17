@@ -1,12 +1,11 @@
-// src/app/tools/personas/personaDialog.tsx
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { PersonaDialogForm } from "./personaDialogForm";
 import { Persona } from "@/types";
-import { AlertCircle } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getModelConfigHeaders } from "@/utils/model-config-checker";
+import { useErrorContext } from "@/hooks/useErrorContext";
+import ErrorDisplay from "@/components/common/ErrorDisplay";
 
 interface PersonaDialogProps {
   open: boolean;
@@ -33,18 +32,15 @@ export function PersonaDialog({
   children,
   isSaving = false,
 }: PersonaDialogProps) {
-  const [modelConfigError, setModelConfigError] = useState<string | null>(null);
+  const errorContext = useErrorContext();
 
   const handleSave = () => {
     // Check if model config is available
     const headers = getModelConfigHeaders();
     if (!headers) {
-      setModelConfigError("No LLM model configured. Please add a model in settings.");
+      errorContext.handleError(new Error("No LLM model configured. Please add a model in settings."));
       return;
     }
-    
-    // Clear any previous errors
-    setModelConfigError(null);
     
     // Proceed with save
     onSave();
@@ -61,11 +57,12 @@ export function PersonaDialog({
           <div>Define a new AI personality with custom traits and behaviors.</div>
         </DialogHeader>
         
-        {modelConfigError && (
-          <Alert variant="destructive" className="my-2">
-            <AlertCircle className="h-4 w-4 mr-2" />
-            <AlertDescription>{modelConfigError}</AlertDescription>
-          </Alert>
+        {errorContext.error && (
+          <ErrorDisplay 
+            error={errorContext.error} 
+            onDismiss={errorContext.clearError}
+            className="my-2"
+          />
         )}
         
         <PersonaDialogForm persona={persona} setPersona={setPersona} />

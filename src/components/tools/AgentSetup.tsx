@@ -7,6 +7,8 @@ import { Plus, Trash, Code, List } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { Label } from "../ui/label";
+import { useErrorContext } from "@/hooks/useErrorContext";
+import ErrorDisplay from "@/components/common/ErrorDisplay";
 
 interface Props {
   agentEndpoint: string;
@@ -19,17 +21,42 @@ interface Props {
 
 export default function AgentSetup({ agentEndpoint, setAgentEndpoint, headers, setHeaders, body, setBody }: Props) {
   const [activeTab, setActiveTab] = useState("headers");
+  const errorContext = useErrorContext();
 
-  const addHeader = () => setHeaders([...headers, { key: "", value: "" }]);
-  const removeHeader = (index: number) => setHeaders(headers.filter((_, i) => i !== index));
+  const addHeader = () => {
+    try {
+      setHeaders([...headers, { key: "", value: "" }]);
+    } catch (err) {
+      errorContext.handleError(err);
+    }
+  };
+  
+  const removeHeader = (index: number) => {
+    try {
+      setHeaders(headers.filter((_, i) => i !== index));
+    } catch (err) {
+      errorContext.handleError(err);
+    }
+  };
+  
   const updateHeader = (index: number, field: "key" | "value", value: string) => {
-    const newHeaders = [...headers];
-    newHeaders[index][field] = value;
-    setHeaders(newHeaders);
+    try {
+      const newHeaders = [...headers];
+      newHeaders[index][field] = value;
+      setHeaders(newHeaders);
+    } catch (err) {
+      errorContext.handleError(err);
+    }
   };
 
   return (
     <Card>
+      {errorContext.error && (
+        <div className="p-3">
+          <ErrorDisplay error={errorContext.error} onDismiss={errorContext.clearError} />
+        </div>
+      )}
+      
       <CardHeader>
         <div className="flex justify-between items-center">
           <div>

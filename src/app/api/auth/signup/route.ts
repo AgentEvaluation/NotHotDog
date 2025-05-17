@@ -1,25 +1,21 @@
+import { withApiHandler } from "@/lib/api-utils";
 import { dbService } from "@/services/db";
-import { NextResponse } from "next/server";
+import { ValidationError } from "@/lib/errors";
 
-export async function POST(request: Request) {
-  try {
-    const { clerkId, orgName, orgDescription, role, status } = await request.json();
-    const result = await dbService.signupUser({
-      clerkId,
-      orgName,
-      orgDescription,
-      role,
-      status,
-    });
-    return new NextResponse(JSON.stringify(result), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (error: any) {
-    console.error("Error during signup:", error);
-    return new NextResponse(
-      JSON.stringify({ error: "Failed to sign up user" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+export const POST = withApiHandler(async (request: Request) => {
+  const { clerkId, orgName, orgDescription, role, status } = await request.json();
+  
+  if (!clerkId || !orgName) {
+    throw new ValidationError("Missing required fields for signup");
   }
-}
+  
+  const result = await dbService.signupUser({
+    clerkId,
+    orgName,
+    orgDescription: orgDescription || "",
+    role: role || "admin",
+    status: status || "active",
+  });
+  
+  return result;
+});

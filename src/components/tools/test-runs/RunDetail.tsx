@@ -2,24 +2,33 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TestRun } from "@/types/runs";
-import { TestExecutionError } from "@/hooks/useTestExecution"; // Import correct type
 import { TestChat } from "@/types/chat";
+import ErrorDisplay from "@/components/common/ErrorDisplay";
+import { useErrorContext } from "@/hooks/useErrorContext";
 
 interface RunDetailProps {
   run: TestRun;
   onBack: () => void;
   onSelectChat: (chat: TestChat) => void;
-  error: TestExecutionError | null; // Update type here
 }
 
-export default function RunDetail({ run, onBack, onSelectChat, error }: RunDetailProps) {
+export default function RunDetail({ 
+  run, 
+  onBack, 
+  onSelectChat
+}: RunDetailProps) {
+  const { error, clearError } = useErrorContext();
+  
   return (
     <div className="p-5 space-y-3 max-w-6xl mx-auto">
       {error && (
-        <div className="p-4 mb-4 text-red-600 bg-red-100 rounded">
-          {error.message}
-        </div>
+        <ErrorDisplay 
+          error={error}
+          onDismiss={clearError}
+          className="mb-4"
+        />
       )}
+      
       <div className="flex items-center justify-between">
         <Button variant="ghost" onClick={onBack}>
           ← Back to Runs

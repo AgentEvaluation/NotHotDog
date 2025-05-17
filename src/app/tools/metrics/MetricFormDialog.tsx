@@ -7,9 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Button } from "@/components/ui/button"
-import { MetricType, Criticality } from "./types"
 import { Slider } from "@/components/ui/slider";
 import { useEffect, useState } from "react"
+import { useErrorContext } from "@/hooks/useErrorContext"
+import ErrorDisplay from "@/components/common/ErrorDisplay"
+import { Criticality, MetricType } from "@/types"
 
 interface FormData {
   name: string
@@ -30,7 +32,6 @@ interface MetricFormDialogProps {
   editingMetric: string | null
 }
 
-
 export default function MetricFormDialog({
   open,
   onOpenChange,
@@ -40,9 +41,9 @@ export default function MetricFormDialog({
   onCancel,
   editingMetric,
 }: MetricFormDialogProps) {
-
   const [agentConfigs, setAgentConfigs] = useState<Array<{ id: string, name: string }>>([])
   const [isLoadingAgents, setIsLoadingAgents] = useState(false)
+  const errorContext = useErrorContext();
 
   useEffect(() => {
     async function fetchAgentConfigs() {
@@ -51,9 +52,9 @@ export default function MetricFormDialog({
         const response = await fetch("/api/tools/agent-config")
         if (!response.ok) throw new Error("Failed to fetch agent configs")
         const data = await response.json()
-        setAgentConfigs(data)
+        setAgentConfigs(data.data)
       } catch (error) {
-        console.error("Error fetching agent configs:", error)
+        errorContext.handleError(error);
       } finally {
         setIsLoadingAgents(false)
       }
@@ -62,7 +63,7 @@ export default function MetricFormDialog({
     if (open) {
       fetchAgentConfigs()
     }
-  }, [open])
+  }, [open, errorContext]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -71,6 +72,14 @@ export default function MetricFormDialog({
           <DialogTitle>{editingMetric ? "Edit Metric" : "Create New Metric"}</DialogTitle>
           <DialogClose className="absolute right-4 top-4" />
         </DialogHeader>
+
+        {errorContext.error && (
+          <ErrorDisplay 
+            error={errorContext.error}
+            onDismiss={errorContext.clearError}
+            className="mb-4"
+          />
+        )}
 
         <div className="grid gap-6 py-4">
           <div className="grid gap-3">
@@ -104,26 +113,24 @@ export default function MetricFormDialog({
           </div>
 
           {formData.type && (
-  <div className="rounded-md bg-muted p-3 text-sm text-muted-foreground">
-    {formData.type === "Binary Qualitative" && (
-      <p>Captures descriptive questions with only two possible values (Yes/No, Pass/Fail).</p>
-    )}
-    {formData.type === "Numeric" && (
-      <p>Represents quantitative data that can be measured numerically (counts, percentages).</p>
-    )}
-    {formData.type === "Binary Workflow Adherence" && (
-      <p>Tracks whether a process followed the expected workflow or sequence of steps.</p>
-    )}
-    {formData.type === "Continuous Qualitative" && (
-      <p>Measures qualitative aspects on a continuous scale (typically 1-10).</p>
-    )}
-    {formData.type === "Enum" && (
-      <p>Metrics with multiple predefined categories (e.g., Positive, Neutral, Negative).</p>
-    )}
-  </div>
-)}
-
-          
+            <div className="rounded-md bg-muted p-3 text-sm text-muted-foreground">
+              {formData.type === "Binary Qualitative" && (
+                <p>Captures descriptive questions with only two possible values (Yes/No, Pass/Fail).</p>
+              )}
+              {formData.type === "Numeric" && (
+                <p>Represents quantitative data that can be measured numerically (counts, percentages).</p>
+              )}
+              {formData.type === "Binary Workflow Adherence" && (
+                <p>Tracks whether a process followed the expected workflow or sequence of steps.</p>
+              )}
+              {formData.type === "Continuous Qualitative" && (
+                <p>Measures qualitative aspects on a continuous scale (typically 1-10).</p>
+              )}
+              {formData.type === "Enum" && (
+                <p>Metrics with multiple predefined categories (e.g., Positive, Neutral, Negative).</p>
+              )}
+            </div>
+          )}
 
           <div className="grid gap-3">
             <Label htmlFor="description">Description</Label>
@@ -137,40 +144,26 @@ export default function MetricFormDialog({
             />
           </div>
 
-          {/* <div className="grid gap-3">
-            <Label htmlFor="successCriteria">Success Criteria</Label>
-            <Textarea
-              id="successCriteria"
-              name="successCriteria"
-              value={formData.successCriteria}
-              onChange={(e) => setFormData((prev) => ({ ...prev, successCriteria: e.target.value }))}
-              placeholder="Define what constitutes success for this metric"
-              rows={2}
-            />
-          </div> */}
-
-          {/* Replace the existing success criteria input with this conditional UI */}
-          
           <div className="grid gap-3">
             <Label htmlFor="successCriteria">Success Criteria</Label>
             
             {formData.type === "Binary Qualitative" && (
-            <RadioGroup
-              value={formData.successCriteria}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, successCriteria: value }))}
-              className="flex space-x-4"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="Yes" id="criteria-yes" />
-                <Label htmlFor="criteria-yes" className="cursor-pointer">Yes</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="No" id="criteria-no" />
-                <Label htmlFor="criteria-no" className="cursor-pointer">No</Label>
-              </div>
-            </RadioGroup>
-          )}
-            
+              <RadioGroup
+                value={formData.successCriteria}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, successCriteria: value }))}
+                className="flex space-x-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Yes" id="criteria-yes" />
+                  <Label htmlFor="criteria-yes" className="cursor-pointer">Yes</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="No" id="criteria-no" />
+                  <Label htmlFor="criteria-no" className="cursor-pointer">No</Label>
+                </div>
+              </RadioGroup>
+            )}
+              
             {formData.type === "Numeric" && (
               <Input
                 id="successCriteria"
@@ -181,7 +174,7 @@ export default function MetricFormDialog({
                 type="text"
               />
             )}
-            
+              
             {formData.type === "Binary Workflow Adherence" && (
               <Textarea
                 id="successCriteria"
@@ -192,7 +185,7 @@ export default function MetricFormDialog({
                 rows={3}
               />
             )}
-            
+              
             {formData.type === "Continuous Qualitative" && (
               <div className="space-y-4">
                 <div className="flex justify-between">
@@ -209,7 +202,7 @@ export default function MetricFormDialog({
                 />
               </div>
             )}
-            
+              
             {formData.type === "Enum" && (
               <Textarea
                 id="successCriteria"
@@ -293,7 +286,19 @@ export default function MetricFormDialog({
           <Button variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          <Button onClick={onSave}>{editingMetric ? "Save Changes" : "Create Metric"}</Button>
+          <Button 
+            onClick={onSave}
+            disabled={errorContext.isLoading}
+          >
+            {errorContext.isLoading ? (
+              <>
+                <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent"></span>
+                {editingMetric ? "Saving..." : "Creating..."}
+              </>
+            ) : (
+              editingMetric ? "Save Changes" : "Create Metric"
+            )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

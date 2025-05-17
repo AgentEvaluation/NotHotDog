@@ -1,12 +1,12 @@
 export const runtime = 'edge';
 
-import { NextResponse } from 'next/server';
+import { withApiHandler } from '@/lib/api-utils';
 import { validateAnalyzeResultsRequest } from '@/lib/validations';
-import { AnthropicModel } from '@/services/llm/enums';
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { RunnableSequence } from "@langchain/core/runnables";
 import { JsonOutputParser } from "@langchain/core/output_parsers";
 import { ModelFactory } from '@/services/llm/modelfactory';
+import { ValidationError, ConfigurationError } from '@/lib/errors';
 
 interface AnalysisResult {
   categorizedResults: Record<string, {
@@ -32,38 +32,30 @@ Return the analysis as JSON with:
 4. improvements: Specific suggestions for improvement`]
 ]);
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const { results } = validateAnalyzeResultsRequest(body);
+export const POST = withApiHandler(async (req: Request) => {
+  const body = await req.json();
+  const { results } = validateAnalyzeResultsRequest(body);
 
-    const modelConfig = ModelFactory.getSelectedModelConfig();
-    if (!modelConfig) {
-      throw new Error('No LLM model configured. Please set up a model in settings.');
-    }
-
-    const model = ModelFactory.createLangchainModel(
-      modelConfig.id,
-      modelConfig.apiKey,
-      modelConfig.extraParams
-    );
-
-    const analysisChain = RunnableSequence.from([
-      analysisTemplate,
-      model,
-      new JsonOutputParser<AnalysisResult>()
-    ]);
-
-    const analysis = await analysisChain.invoke({
-      results: JSON.stringify(results, null, 2)
-    });
-
-    return NextResponse.json(analysis);
-  } catch (error) {
-    console.error('Analysis error:', error);
-    return NextResponse.json(
-      { error: 'Failed to analyze results' },
-      { status: 500 }
-    );
+  const modelConfig = ModelFactory.getSelectedModelConfig();
+  if (!modelConfig) {
+    throw new ConfigurationError('No LLM model configured. Please set up a model in settings.');
   }
-}
+
+  const model = ModelFactory.createLangchainModel(
+    modelConfig.id,
+    modelConfig.apiKey,
+    modelConfig.extraParams
+  );
+
+  const analysisChain = RunnableSequence.from([
+    analysisTemplate,
+    model,
+    new JsonOutputParser<AnalysisResult>()
+  ]);
+
+  const analysis = await analysisChain.invoke({
+    results: JSON.stringify(results, null, 2)
+  });
+
+  return analysis;
+});

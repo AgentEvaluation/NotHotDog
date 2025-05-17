@@ -1,13 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, X, AlertTriangle, CheckCircle2 } from "lucide-react"
+import { Plus, X, AlertTriangle, CheckCircle2, ArrowRight } from "lucide-react"
 import { v4 as uuidv4 } from "uuid"
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Rule } from "@/services/agents/claude/types";
 
 interface AgentRulesProps {
@@ -26,7 +27,6 @@ export default function AgentRules({ manualResponse, rules, setRules, agentId }:
       path,
       condition: "=",
       value: "",
-      isValid: false
     }
     setRules([...rules, newRule])
   }
@@ -139,6 +139,48 @@ export default function AgentRules({ manualResponse, rules, setRules, agentId }:
 
   const rulesPass = manualResponse ? checkRules(manualResponse) : true
 
+  // Get display name for condition
+  const getConditionDisplayName = (condition: string): string => {
+    switch (condition) {
+      case "=":
+        return "equals"
+      case "!=":
+        return "not equals"
+      case ">":
+        return "greater than"
+      case "<":
+        return "less than"
+      case ">=":
+        return "greater/equal"
+      case "<=":
+        return "less/equal"
+      case "contains":
+        return "contains"
+      case "not_contains":
+        return "not contains"
+      case "starts_with":
+        return "starts with"
+      case "ends_with":
+        return "ends with"
+      case "matches":
+        return "matches regex"
+      case "has_key":
+        return "has key"
+      case "array_contains":
+        return "array contains"
+      case "array_length":
+        return "array length"
+      case "null":
+        return "is null"
+      case "not_null":
+        return "is not null"
+      case "chat":
+        return "is chat"
+      default:
+        return condition
+    }
+  }
+
   return (
     <Card className="border-border bg-card/50 backdrop-blur-sm shadow-sm h-full">
       <CardHeader className="pb-2">
@@ -174,58 +216,80 @@ export default function AgentRules({ manualResponse, rules, setRules, agentId }:
 
       <CardContent className="space-y-4">
         {rules.length > 0 && (
-          <div className="space-y-3 max-h-[200px] overflow-y-auto pr-1">
+          <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
             {rules.map((rule, index) => (
-              <div
-                key={index}
-                className="flex items-center gap-2 group bg-background/50 p-2 rounded-md border border-border"
-              >
-                <div className="text-xs font-mono text-muted-foreground truncate max-w-[80px]">{rule.path}</div>
-                <Select
-                  value={rule.condition}
-                  onValueChange={(value) => updateRule(index, { condition: value as Rule["condition"] })}
-                >
-                  <SelectTrigger className="h-7 w-[100px] text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="=">equals</SelectItem>
-                    <SelectItem value="!=">not equals</SelectItem>
-                    <SelectItem value="contains">contains</SelectItem>
-                    <SelectItem value="not_contains">not contains</SelectItem>
-                    <SelectItem value="starts_with">starts with</SelectItem>
-                    <SelectItem value="ends_with">ends with</SelectItem>
-                    <SelectItem value="matches">matches regex</SelectItem>
-                    <SelectItem value=">">greater</SelectItem>
-                    <SelectItem value=">=">greater/equal</SelectItem>
-                    <SelectItem value="<">less</SelectItem>
-                    <SelectItem value="<=">less/equal</SelectItem>
-                    <SelectItem value="has_key">has key</SelectItem>
-                    <SelectItem value="array_contains">array contains</SelectItem>
-                    <SelectItem value="array_length">array length</SelectItem>
-                    <SelectItem value="null">is null</SelectItem>
-                    <SelectItem value="not_null">not null</SelectItem>
-                    <SelectItem value="chat">chat</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div key={index} className="bg-background/80 p-3 rounded-md border border-border shadow-sm">
+                <div className="flex justify-between items-start mb-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 font-mono">
+                          {rule.path}
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>JSON path to validate</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
 
-                {/* Only show value input if condition isn't null/not_null/chat */}
-                {!["null", "not_null", "chat"].includes(rule.condition) && (
-                  <Input
-                    value={rule.value}
-                    onChange={(e) => updateRule(index, { value: e.target.value })}
-                    className="h-7 text-xs"
-                  />
-                )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeRule(index)}
+                    className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
 
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeRule(index)}
-                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X className="h-3.5 w-3.5 text-destructive" />
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                  <div className="w-full sm:w-auto">
+                    <Select
+                      value={rule.condition}
+                      onValueChange={(value) => updateRule(index, { condition: value as Rule["condition"] })}
+                    >
+                      <SelectTrigger className="h-8 text-xs w-full sm:w-[140px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="=">equals</SelectItem>
+                        <SelectItem value="!=">not equals</SelectItem>
+                        <SelectItem value="contains">contains</SelectItem>
+                        <SelectItem value="not_contains">not contains</SelectItem>
+                        <SelectItem value="starts_with">starts with</SelectItem>
+                        <SelectItem value="ends_with">ends with</SelectItem>
+                        <SelectItem value="matches">matches regex</SelectItem>
+                        <SelectItem value=">">greater than</SelectItem>
+                        <SelectItem value=">=">greater/equal</SelectItem>
+                        <SelectItem value="<">less than</SelectItem>
+                        <SelectItem value="<=">less/equal</SelectItem>
+                        <SelectItem value="has_key">has key</SelectItem>
+                        <SelectItem value="array_contains">array contains</SelectItem>
+                        <SelectItem value="array_length">array length</SelectItem>
+                        <SelectItem value="null">is null</SelectItem>
+                        <SelectItem value="not_null">not null</SelectItem>
+                        <SelectItem value="chat">chat</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {!["null", "not_null", "chat"].includes(rule.condition) ? (
+                    <>
+                      <ArrowRight className="hidden sm:block h-4 w-4 text-muted-foreground shrink-0" />
+                      <Input
+                        value={rule.value}
+                        onChange={(e) => updateRule(index, { value: e.target.value })}
+                        className="h-8 text-xs flex-1"
+                        placeholder="Value to compare against"
+                      />
+                    </>
+                  ) : (
+                    <div className="text-xs text-muted-foreground italic ml-2">
+                      No value needed for {getConditionDisplayName(rule.condition)}
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -239,7 +303,7 @@ export default function AgentRules({ manualResponse, rules, setRules, agentId }:
         )}
 
         {manualResponse && (
-          <div className="bg-background/50 p-3 rounded-md border border-border text-sm overflow-auto max-h-[300px]">
+          <div className="bg-background/80 p-3 rounded-md border border-border text-sm overflow-auto max-h-[300px]">
             {renderObject(manualResponse)}
           </div>
         )}

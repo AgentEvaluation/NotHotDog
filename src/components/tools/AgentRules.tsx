@@ -1,180 +1,320 @@
-"use client";
+"use client"
 
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Trash } from "lucide-react";
+import { useState } from "react"
+import { Plus, X, AlertTriangle, CheckCircle2, ArrowRight } from "lucide-react"
+import { v4 as uuidv4 } from "uuid"
+import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Rule } from "@/services/agents/claude/types";
-import { useState, useEffect, useMemo } from "react";
-import { useErrorContext } from "@/hooks/useErrorContext";
-import ErrorDisplay from "@/components/common/ErrorDisplay";
 
-interface Props {
-  manualResponse: string;
-  rules: Rule[];
-  setRules: (rules: Rule[]) => void;
-  agentId: string | null;
+interface AgentRulesProps {
+  manualResponse: any
+  rules: Rule[]
+  setRules: (rules: Rule[]) => void
+  agentId: string
 }
 
-export default function AgentRules({ manualResponse, rules, setRules, agentId }: Props) {
-  const [originalRules, setOriginalRules] = useState<Rule[]>([]);
-  const { error, clearError, handleError, withErrorHandling } = useErrorContext();
+export default function AgentRules({ manualResponse, rules, setRules, agentId }: AgentRulesProps) {
+  const [hoveredPath, setHoveredPath] = useState<string | null>(null)
 
-  useEffect(() => {
-    setOriginalRules(rules);
-  }, []);
+  const addRule = (path = "") => {
+    const newRule: Rule = {
+      id: uuidv4(),
+      path,
+      condition: "=",
+      value: "",
+      isValid: true, // Add the isValid property
+    }
+    setRules([...rules, newRule])
+  }
 
-  const hasChanges = useMemo(() => {
-    return JSON.stringify(originalRules) !== JSON.stringify(rules);
-  }, [originalRules, rules]);
+  const removeRule = (index: number) => {
+    setRules(rules.filter((_, i) => i !== index))
+  }
 
-  const handleSaveRules = async () => {
-    await withErrorHandling(async () => {
-      if (!agentId) {
-        throw new Error("Missing agent ID");
+  const updateRule = (index: number, updates: Partial<Rule>) => {
+    const newRules = [...rules]
+    newRules[index] = { ...newRules[index], ...updates }
+    setRules(newRules)
+  }
+
+  const checkRules = (response: any): boolean => {
+    if (!rules.length) return true
+
+    return rules.every((rule) => {
+      const value = getValueByPath(response, rule.path)
+      switch (rule.condition) {
+        case "=":
+          return value === rule.value
+        case "!=":
+          return value !== rule.value
+        case ">":
+          return Number(value) > Number(rule.value)
+        case "<":
+          return Number(value) < Number(rule.value)
+        case ">=":
+          return Number(value) >= Number(rule.value)
+        case "<=":
+          return Number(value) <= Number(rule.value)
+        case "contains":
+          return String(value).includes(rule.value)
+        case "not_contains":
+          return !String(value).includes(rule.value)
+        case "starts_with":
+          return String(value).startsWith(rule.value)
+        case "ends_with":
+          return String(value).endsWith(rule.value)
+        case "matches":
+          try {
+            const regex = new RegExp(rule.value)
+            return regex.test(String(value))
+          } catch (e) {
+            return false
+          }
+        case "has_key":
+          return value && typeof value === "object" && rule.value in value
+        case "array_contains":
+          return Array.isArray(value) && value.includes(rule.value)
+        case "array_length":
+          return Array.isArray(value) && value.length === Number(rule.value)
+        case "null":
+          return value === null || value === undefined
+        case "not_null":
+          return value !== null && value !== undefined
+        case "chat":
+          return typeof value === "string" && value.length > 0 // Chat validation logic
+        default:
+          return false
       }
-      
-      const res = await fetch("/api/tools/agent-rules", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          agentId,
-          rules,
-        }),
-      });
-      
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to update rules");
+    })
+  }
+
+  const getValueByPath = (obj: any, path: string): any => {
+    return path.split(".").reduce((acc, part) => acc?.[part], obj)
+  }
+
+  const renderObject = (obj: any, path = "") => {
+    if (!obj || typeof obj !== "object") return null
+
+    return Object.entries(obj).map(([key, value]) => {
+      const currentPath = path ? `${path}.${key}` : key
+
+      if (value && typeof value === "object" && !Array.isArray(value)) {
+        return (
+          <div key={currentPath} className="ml-4">
+            <div className="text-muted-foreground font-medium">{key}:</div>
+            {renderObject(value, currentPath)}
+          </div>
+        )
       }
-      
-      setOriginalRules(rules);
-    });
-  };
 
-  const handleDeleteRule = (ruleId: string) => {
-    try {
-      setRules(rules.filter(r => r.id !== ruleId));
-    } catch (err) {
-      handleError(err);
-    }
-  };
+      return (
+        <div
+          key={currentPath}
+          className="ml-4 flex items-center group py-1"
+          onMouseEnter={() => setHoveredPath(currentPath)}
+          onMouseLeave={() => setHoveredPath(null)}
+        >
+          <span className="text-muted-foreground">{key}: </span>
+          <span className="text-foreground ml-2 font-mono text-sm">
+            {typeof value === "object" ? JSON.stringify(value) : String(value)}
+          </span>
+          {hoveredPath === currentPath && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={() => addRule(currentPath)}
+            >
+              <Plus className="h-3.5 w-3.5 text-primary" />
+            </Button>
+          )}
+        </div>
+      )
+    })
+  }
 
-  const handleConditionChange = (index: number, value: string) => {
-    try {
-      const updatedRules = [...rules];
-      updatedRules[index].condition = value as Rule["condition"];
-      setRules(updatedRules);
-    } catch (err) {
-      handleError(err);
-    }
-  };
+  const rulesPass = manualResponse ? checkRules(manualResponse) : true
 
-  const handleValueChange = (index: number, value: string) => {
-    try {
-      const updatedRules = [...rules];
-      updatedRules[index].value = value;
-      setRules(updatedRules);
-    } catch (err) {
-      handleError(err);
+  // Get display name for condition
+  const getConditionDisplayName = (condition: string): string => {
+    switch (condition) {
+      case "=":
+        return "equals"
+      case "!=":
+        return "not equals"
+      case ">":
+        return "greater than"
+      case "<":
+        return "less than"
+      case ">=":
+        return "greater/equal"
+      case "<=":
+        return "less/equal"
+      case "contains":
+        return "contains"
+      case "not_contains":
+        return "not contains"
+      case "starts_with":
+        return "starts with"
+      case "ends_with":
+        return "ends with"
+      case "matches":
+        return "matches regex"
+      case "has_key":
+        return "has key"
+      case "array_contains":
+        return "array contains"
+      case "array_length":
+        return "array length"
+      case "null":
+        return "is null"
+      case "not_null":
+        return "is not null"
+      case "chat":
+        return "is chat"
+      default:
+        return condition
     }
-  };
+  }
 
   return (
-    <Card className="border border-border bg-background h-full">
-      <CardHeader>
-        <CardTitle>Validation Rules</CardTitle>
-        <CardDescription>Click + next to response fields to add rules</CardDescription>
+    <Card className="border-border bg-card/50 backdrop-blur-sm shadow-sm h-full">
+      <CardHeader className="pb-2">
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-base font-medium">Validation Rules</CardTitle>
+          {rules.length > 0 && (
+            <Badge
+              variant="outline"
+              className={`${
+                rulesPass
+                  ? "bg-green-500/10 text-green-500 border-green-500/20"
+                  : "bg-red-500/10 text-red-500 border-red-500/20"
+              }`}
+            >
+              {rulesPass ? (
+                <span className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" /> Pass
+                </span>
+              ) : (
+                <span className="flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" /> Fail
+                </span>
+              )}
+            </Badge>
+          )}
+        </div>
+        <CardDescription>
+          {manualResponse
+            ? "Click on response fields to add validation rules"
+            : "Test the agent to see response and add rules"}
+        </CardDescription>
       </CardHeader>
-      <CardContent>
-        {error && (
-          <div className="mb-4">
-            <ErrorDisplay error={error} onDismiss={clearError} />
-          </div>
-        )}
-        
-        {manualResponse ? (
-          rules.length > 0 ? (
-            <div className="space-y-2">
-              {rules.map((rule, index) => (
-                <div
-                  key={rule.id || `${rule.path}-${index}`}
-                  className="group bg-background rounded-[var(--radius)] border border-border/50 hover:border-zinc-700/50 p-3"
-                >
-                  {/* Display the JSON path (read-only) */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <input
-                      type="text"
-                      readOnly
-                      value={rule.path}
-                      className="bg-background border border-border text-sm py-1 px-2 rounded-[var(--radius)] flex-1 text-muted-foreground cursor-not-allowed"
-                    />
-                    {/* Delete button */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="opacity-80 hover:opacity-100"
-                      onClick={() => handleDeleteRule(rule.id)}
+
+      <CardContent className="space-y-4">
+        {rules.length > 0 && (
+          <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
+            {rules.map((rule, index) => (
+              <div key={index} className="bg-background/80 p-3 rounded-md border border-border shadow-sm">
+                <div className="flex justify-between items-start mb-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 font-mono">
+                          {rule.path}
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>JSON path to validate</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeRule(index)}
+                    className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                  <div className="w-full sm:w-auto">
+                    <Select
+                      value={rule.condition}
+                      onValueChange={(value) => updateRule(index, { condition: value as Rule["condition"] })}
                     >
-                      <Trash className="h-4 w-4" />
-                    </Button>
+                      <SelectTrigger className="h-8 text-xs w-full sm:w-[140px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="=">equals</SelectItem>
+                        <SelectItem value="!=">not equals</SelectItem>
+                        <SelectItem value="contains">contains</SelectItem>
+                        <SelectItem value="not_contains">not contains</SelectItem>
+                        <SelectItem value="starts_with">starts with</SelectItem>
+                        <SelectItem value="ends_with">ends with</SelectItem>
+                        <SelectItem value="matches">matches regex</SelectItem>
+                        <SelectItem value=">">greater than</SelectItem>
+                        <SelectItem value=">=">greater/equal</SelectItem>
+                        <SelectItem value="<">less than</SelectItem>
+                        <SelectItem value="<=">less/equal</SelectItem>
+                        <SelectItem value="has_key">has key</SelectItem>
+                        <SelectItem value="array_contains">array contains</SelectItem>
+                        <SelectItem value="array_length">array length</SelectItem>
+                        <SelectItem value="null">is null</SelectItem>
+                        <SelectItem value="not_null">not null</SelectItem>
+                        <SelectItem value="chat">chat</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={rule.condition}
-                      onChange={(e) => handleConditionChange(index, e.target.value)}
-                      className="bg-background border border-border text-sm py-1 px-2 rounded-[var(--radius)]"
-                    >
-                      <option value="=">=</option>
-                      <option value="!=">!=</option>
-                      <option value="contains">contains</option>
-                      <option value="not_contains">does not contain</option>
-                      <option value="starts_with">starts with</option>
-                      <option value="ends_with">ends with</option>
-                      <option value="matches">matches regex</option>
-                      <option value=">">&gt;</option>
-                      <option value=">=">&gt;=</option>
-                      <option value="<">&lt;</option>
-                      <option value="<=">&lt;=</option>
-                      <option value="has_key">has key</option>
-                      <option value="array_contains">array contains</option>
-                      <option value="array_length">array length</option>
-                      <option value="null">is null</option>
-                      <option value="not_null">is not null</option>
-                      <option value="chat">chat</option>
-                    </select>
-                    {/* Only show value input if condition isn't null/not_null/chat */}
-                    {!["null", "not_null", "chat"].includes(rule.condition) && (
-                      <input
-                        type="text"
+                  {!["null", "not_null", "chat"].includes(rule.condition) ? (
+                    <>
+                      <ArrowRight className="hidden sm:block h-4 w-4 text-muted-foreground shrink-0" />
+                      <Input
                         value={rule.value}
-                        onChange={(e) => handleValueChange(index, e.target.value)}
-                        className="flex-1 bg-background border border-border text-sm py-1 px-2 rounded-[var(--radius)]"
+                        onChange={(e) => updateRule(index, { value: e.target.value })}
+                        className="h-8 text-xs flex-1"
+                        placeholder="Value to compare against"
                       />
-                    )}
-                  </div>
+                    </>
+                  ) : (
+                    <div className="text-xs text-muted-foreground italic ml-2">
+                      No value needed for {getConditionDisplayName(rule.condition)}
+                    </div>
+                  )}
                 </div>
-              ))}
-              <div className="flex justify-end mt-4">
-                <Button
-                  disabled={!hasChanges}  // Button disabled if no changes
-                  onClick={handleSaveRules}
-                >
-                  Done
-                </Button>
               </div>
-            </div>
-          ) : (
-            <div className="text-muted-foreground text-center py-8 px-4 bg-background rounded-[var(--radius)] border border-dashed border-border">
-              Click + next to response fields to add validation rules
-            </div>
-          )
-        ) : (
-          <div className="text-muted-foreground text-center py-8 px-4 bg-background rounded-[var(--radius)] border border-dashed border-border">
-            Test the agent to add validation rules
+            ))}
           </div>
         )}
+
+        {!manualResponse && (
+          <div className="flex flex-col items-center justify-center h-[200px] text-center p-4 border border-dashed border-border rounded-md">
+            <AlertTriangle className="h-10 w-10 text-muted-foreground mb-2 opacity-50" />
+            <p className="text-muted-foreground">Test the agent to view response and add validation rules</p>
+          </div>
+        )}
+
+        {manualResponse && (
+          <div className="bg-background/80 p-3 rounded-md border border-border text-sm overflow-auto max-h-[300px]">
+            {renderObject(manualResponse)}
+          </div>
+        )}
+
+        {/* {manualResponse && (
+          <Button variant="outline" size="sm" onClick={() => addRule()} className="w-full mt-2">
+            <Plus className="h-3.5 w-3.5 mr-1" /> Add Custom Rule
+          </Button>
+        )} */}
       </CardContent>
     </Card>
-  );
+  )
 }

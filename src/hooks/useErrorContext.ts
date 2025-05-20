@@ -33,7 +33,8 @@ export function ErrorProvider({ children }: { children: ReactNode }) {
 
   const errorDisplay = errorHandler.error ? 
     React.createElement('div', { 
-      className: "fixed top-0 left-0 right-0 z-50 px-4 py-2" 
+      className: "fixed top-0 left-0 right-0 z-50 px-4 py-2",
+      key: "error-display" // Add unique key here
     }, 
     React.createElement(ErrorDisplay, {
       error: errorHandler.error,
@@ -42,10 +43,16 @@ export function ErrorProvider({ children }: { children: ReactNode }) {
     })
   ) : null;
 
+  // Add key to the children element if it's a single element
+  const childrenWithKey = React.isValidElement(children) ? 
+    React.cloneElement(children, { key: 'content' }) : 
+    children;
+
+  // Create a fragment to contain both elements instead of an array
   return React.createElement(
     ErrorContext.Provider, 
     { value: errorHandler },
-    [errorDisplay, children]
+    React.createElement(React.Fragment, null, errorDisplay, childrenWithKey)
   );
 }
 

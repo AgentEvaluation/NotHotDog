@@ -194,6 +194,7 @@ model test_conversations {
   test_runs             test_runs               @relation(fields: [run_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   test_scenarios        test_scenarios          @relation(fields: [scenario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   test_run_metrics      test_run_metrics[]
+  metrics               Json?  
 
   @@index([run_id], map: "idx_test_conversations_run")
   @@index([status], map: "idx_test_conversations_status")

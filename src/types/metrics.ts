@@ -2,6 +2,12 @@ export interface MessageMetrics {
   responseTime?: number;
   validationScore?: number;
   contextRelevance?: number;
+  tokenUsage?: {
+    prompt: number;
+    completion: number;
+    total: number;
+  };
+  hallucinationScore?: boolean;
 }
 
 export interface BaseMetrics {
@@ -58,4 +64,10 @@ export interface Metric {
   criticality?: Criticality;
   agentIds?: string[];
   createdAt?: string;
+}
+
+export interface TokenUsage {
+  prompt: number;
+  completion: number;
+  total: number;
 }

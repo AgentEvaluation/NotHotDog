@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TestCaseVariations } from "@/components/tools/TestCaseVariations";
@@ -15,13 +15,16 @@ export default function TestCasesPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const { error, clearError, handleError, withErrorHandling } = useErrorContext();
+  const hasFetchedAgentCases = useRef<boolean>(false);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   useEffect(() => {
-    fetchSavedTests();
+    if (!hasFetchedAgentCases.current) {
+      fetchSavedTests();
+    }
   }, []);
   
   const fetchSavedTests = async () => {
@@ -36,6 +39,7 @@ export default function TestCasesPage() {
       
       const data = await response.json();
       setAgentCases(data.data);
+      hasFetchedAgentCases.current = true;
     }, true);
   };
   

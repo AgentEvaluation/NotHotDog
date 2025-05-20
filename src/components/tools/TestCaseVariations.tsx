@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -33,6 +33,9 @@ export function TestCaseVariations({
   const [showFileUploadDialog, setShowFileUploadDialog] = useState(false);
   const errorContext = useErrorContext();
   
+  // Add ref to track if data has been loaded for a test already
+  const loadedTestId = useRef<string | null>(null);
+  
   const { 
     variationData, 
     loading,
@@ -40,8 +43,17 @@ export function TestCaseVariations({
     updateVariation,
     deleteVariation,
     toggleScenarioEnabled,
-    variationData: cachedVariationData
-  } = useTestVariations(selectedTestId);
+    variationData: cachedVariationData,
+    loadVariations
+  } = useTestVariations(undefined);
+  
+  // Load variations only when the selected test changes and isn't already loaded
+  useEffect(() => {
+    if (selectedTestId && selectedTestId !== loadedTestId.current) {
+      loadVariations(selectedTestId);
+      loadedTestId.current = selectedTestId;
+    }
+  }, [selectedTestId, loadVariations]);
   
   useEffect(() => {
     if (variationData && selectedTestId) {
@@ -474,5 +486,3 @@ export function TestCaseVariations({
     </Card>
   );
 }
-
-export default TestCaseVariations;

@@ -4,6 +4,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import ConversationView from "./ConversationView";
 import MetricsView from "./MetricsView";
 import { Conversation } from "@/types/chat";
+import { MetricsPanel } from "../metrics/MetricsPanel";
 
 interface ChatDetailProps {
   chat: Conversation;
@@ -31,32 +32,46 @@ export default function ChatDetail({ chat, onBack }: ChatDetailProps) {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="bg-background p-1 border rounded-md shadow-sm">
-            <TabsTrigger
-              value="conversation"
-              className="px-4 py-1.5 text-sm rounded-md data-[state=active]:bg-muted data-[state=active]:text-foreground"
-            >
-              Conversation
-            </TabsTrigger>
-            <TabsTrigger
-              value="metrics"
-              className="px-4 py-1.5 text-sm rounded-md data-[state=active]:bg-muted data-[state=active]:text-foreground"
-            >
-              Metrics Breakdown
-            </TabsTrigger>
-          </TabsList>
+            <TabsList className="bg-background p-1 border rounded-md shadow-sm">
+                <TabsTrigger
+                value="conversation"
+                className="px-4 py-1.5 text-sm rounded-md data-[state=active]:bg-muted data-[state=active]:text-foreground"
+                >
+                Conversation
+                </TabsTrigger>
+                <TabsTrigger
+                value="metrics"
+                className="px-4 py-1.5 text-sm rounded-md data-[state=active]:bg-muted data-[state=active]:text-foreground"
+                >
+                Metrics Breakdown
+                </TabsTrigger>
+                <TabsTrigger
+                value="advanced"
+                className="px-4 py-1.5 text-sm rounded-md data-[state=active]:bg-muted data-[state=active]:text-foreground"
+                >
+                Advanced Metrics
+                </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="conversation" className="pt-4">
-            <ConversationView chat={chat} />
-          </TabsContent>
+            <TabsContent value="conversation" className="pt-4">
+                <ConversationView chat={chat} />
+            </TabsContent>
 
-          <TabsContent value="metrics" className="pt-4">
-            <MetricsView 
-              metricResults={chat.metrics.metricResults || []} 
-              metricFilter={metricFilter}
-              setMetricFilter={setMetricFilter}
-            />
-          </TabsContent>
+            <TabsContent value="metrics" className="pt-4">
+                <MetricsView 
+                metricResults={chat.metrics.metricResults || []} 
+                metricFilter={metricFilter}
+                setMetricFilter={setMetricFilter}
+                />
+            </TabsContent>
+
+            <TabsContent value="advanced" className="pt-4">
+                <MetricsPanel 
+                responseTime={chat.metrics.responseTime || []} 
+                tokenUsage={chat.metrics.tokenUsage}
+                isHallucination={chat.metrics.isHallucination}
+                />
+            </TabsContent>
         </Tabs>
       </div>
     </div>

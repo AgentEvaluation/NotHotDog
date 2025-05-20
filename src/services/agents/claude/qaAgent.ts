@@ -15,6 +15,8 @@ import { ConversationProcessor } from './conversationProcessor';
 import { ValidationService } from './validationService';
 import { TestMessage } from "@/types/runs";
 import { ResponseValidator } from './validators';
+import TokenUsageCalculator from "@/services/metrics/tokenUsageCalculator";
+import HallucinationDetector from "@/services/metrics/hallucinationDetector";
 
 /**
  * QaAgent - A comprehensive agent for testing conversational AI systems
@@ -236,6 +238,41 @@ private async processTurn(message: string, chatId: string): Promise<{
       metrics: { responseTime, validationScore: 1 }
     }
   ];
+
+
+// Calculate token usage
+const tokenUsage = TokenUsageCalculator.calculateTokenUsage(
+  this.config.provider as any,
+  message,
+  assistantResponse
+);
+
+// Add token usage to metrics
+messages[1].metrics = {
+  ...messages[1].metrics,
+  tokenUsage
+};
+
+if (ModelFactory.getSelectedModelConfig()) {
+  try {
+    const detector = new HallucinationDetector(ModelFactory.getSelectedModelConfig());
+    const isHallucination = await detector.detectHallucination(
+      message,  // Context
+      message,  // Query
+      assistantResponse  // Response
+    );
+    
+    // Add hallucination flag to metrics
+    messages[1].metrics = {
+      ...messages[1].metrics,
+      isHallucination
+    };
+  } catch (error) {
+    console.error("Error detecting hallucination:", error);
+  }
+}
+
+
 
   // Save to database for logging and analysis
   await dbService.saveConversationMessage({

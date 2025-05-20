@@ -1,21 +1,18 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { SimplifiedTestCases, TestVariation, TestVariations } from '@/types/variations';
 import { useErrorContext } from '@/hooks/useErrorContext';
 import { withErrorHandling } from '@/utils/error-handlers';
 
-export function useTestVariations(testId?: string) {
+export function useTestVariations(initialTestId?: string | undefined) {
   const [variations, setVariations] = useState<TestVariations>({});
   const [variationData, setVariationData] = useState<SimplifiedTestCases | null>(null);
   const [loading, setLoading] = useState(false);
   const errorContext = useErrorContext();
 
-  useEffect(() => {
-    if (testId) {
-      loadVariation(testId);
-    }
-  }, [testId]);
-  
-  const loadVariation = async (testId: string) => {
+  // Load variations when testId changes
+  const loadVariations = useCallback(async (testId: string) => {
+    if (!testId) return;
+    
     await withErrorHandling(
       async () => {
         setLoading(true);
@@ -30,7 +27,14 @@ export function useTestVariations(testId?: string) {
       errorContext,
       { setLoading }
     )();
-  };
+  }, [errorContext]);
+
+  // Initialize data if initialTestId is provided
+  useEffect(() => {
+    if (initialTestId) {
+      loadVariations(initialTestId);
+    }
+  }, [initialTestId, loadVariations]);
 
   const addVariation = useCallback(async (newVariation: TestVariation) => {
     return await withErrorHandling(
@@ -155,6 +159,7 @@ export function useTestVariations(testId?: string) {
     deleteVariation,
     setLoading,
     toggleScenarioEnabled,
+    loadVariations,
     clearError: errorContext.clearError
   };
 }

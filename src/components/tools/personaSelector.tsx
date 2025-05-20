@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,27 +16,38 @@ export default function PersonaSelector({ selectedTest }: PersonaSelectorProps) 
   const selectedPersonas = mapping?.personaIds || [];
   const [personas, setPersonas] = useState<Persona[]>([]);
   const errorContext = useErrorContext();
+  
+  // Use string for tracking the last loaded test ID instead of a boolean
+  const lastLoadedTestId = useRef<string | null>(null);
+  const hasFetchedPersonas = useRef<boolean>(false);
 
+  // Fetch personas only once
   useEffect(() => {
+    if (hasFetchedPersonas.current) return;
+    
     const fetchPersonas = async () => {
       await errorContext.withErrorHandling(async () => {
         const res = await fetch('/api/tools/personas');
         const data = await res.json();
         setPersonas(data.data);
+        hasFetchedPersonas.current = true;
       });
     };
     
     fetchPersonas();
   }, [errorContext]);
   
+  // Fetch mapping only when selectedTest changes and is not empty
   useEffect(() => {
-    if (!selectedTest) return;
+    // Skip if no test selected or if it's the same test we already loaded
+    if (!selectedTest || selectedTest === lastLoadedTestId.current) return;
     
     const fetchMapping = async () => {
       await errorContext.withErrorHandling(async () => {
         const res = await fetch(`/api/tools/persona-mapping?agentId=${selectedTest}`);
         const data = await res.json();
         setMapping(data.data);
+        lastLoadedTestId.current = selectedTest;
       });
     };
     

@@ -44,9 +44,9 @@ export const POST = withApiHandler(async (request: Request) => {
     throw new ForbiddenError('User organization not found');
   }
   
-  if (configData.org_id !== userProfile.org_id) {
-    throw new ForbiddenError('User does not have access to this organization');
-  }
+  // Set org_id and created_by from the authenticated user's profile
+  configData.org_id = userProfile.org_id;
+  configData.created_by = userProfile.id;
   
   const result = await dbService.saveAgentConfig(configData);
   return result;
@@ -68,9 +68,8 @@ export const PUT = withApiHandler(async (request: Request) => {
     throw new ForbiddenError('User organization not found');
   }
   
-  if (configData.org_id !== userProfile.org_id) {
-    throw new ForbiddenError('User does not have access to this organization');
-  }
+  // Ensure org_id matches the user's organization
+  configData.org_id = userProfile.org_id;
   
   const result = await dbService.saveAgentConfig(configData);
   return result;

@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { PersonaDialogForm } from "./personaDialogForm";
+import { PersonaForm } from "./PersonaForm";
 import { Persona } from "@/types";
 import { getModelConfigHeaders } from "@/utils/model-config-checker";
 import { useErrorContext } from "@/hooks/useErrorContext";
@@ -65,7 +65,7 @@ export function PersonaDialog({
           />
         )}
         
-        <PersonaDialogForm persona={persona} setPersona={setPersona} />
+        <PersonaForm persona={persona} setPersona={setPersona} mode="dialog" />
         
         <DialogFooter>
           <Button variant="outline" onClick={onCancel} disabled={isSaving}>

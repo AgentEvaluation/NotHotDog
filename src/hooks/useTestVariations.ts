@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { SimplifiedTestCases, TestVariation, TestVariations } from '@/types/variations';
 import { useErrorContext } from '@/hooks/useErrorContext';
-import { withErrorHandling } from '@/utils/error-handlers';
 
 export function useTestVariations(initialTestId?: string | undefined) {
   const [variations, setVariations] = useState<TestVariations>({});
@@ -13,9 +12,9 @@ export function useTestVariations(initialTestId?: string | undefined) {
   const loadVariations = useCallback(async (testId: string) => {
     if (!testId) return;
     
-    await withErrorHandling(
-      async () => {
-        setLoading(true);
+    setLoading(true);
+    try {
+      await errorContext.withErrorHandling(async () => {
         const response = await fetch(`/api/tools/test-variations?testId=${testId}`);
         if (!response.ok) {
           const data = await response.json();
@@ -23,10 +22,10 @@ export function useTestVariations(initialTestId?: string | undefined) {
         }
         const data = await response.json();
         setVariationData(data.data);
-      },
-      errorContext,
-      { setLoading }
-    )();
+      }, false);
+    } finally {
+      setLoading(false);
+    }
   }, [errorContext]);
 
   // Initialize data if initialTestId is provided
@@ -37,9 +36,9 @@ export function useTestVariations(initialTestId?: string | undefined) {
   }, [initialTestId, loadVariations]);
 
   const addVariation = useCallback(async (newVariation: TestVariation) => {
-    return await withErrorHandling(
-      async () => {
-        setLoading(true);
+    setLoading(true);
+    try {
+      return await errorContext.withErrorHandling(async () => {
         const response = await fetch('/api/tools/test-variations', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -59,16 +58,16 @@ export function useTestVariations(initialTestId?: string | undefined) {
         }));
         
         return data.data;
-      },
-      errorContext,
-      { setLoading }
-    )();
+      }, false);
+    } finally {
+      setLoading(false);
+    }
   }, [errorContext]);
 
   const updateVariation = useCallback(async (variation: TestVariation) => {
-    return await withErrorHandling(
-      async () => {
-        setLoading(true);
+    setLoading(true);
+    try {
+      return await errorContext.withErrorHandling(async () => {
         const response = await fetch('/api/tools/test-variations', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -89,16 +88,16 @@ export function useTestVariations(initialTestId?: string | undefined) {
         });
         
         return true;
-      },
-      errorContext,
-      { setLoading }
-    )();
+      }, false);
+    } finally {
+      setLoading(false);
+    }
   }, [errorContext]);
 
   const deleteVariation = useCallback(async (variation: TestVariation) => {
-    return await withErrorHandling(
-      async () => {
-        setLoading(true);
+    setLoading(true);
+    try {
+      return await errorContext.withErrorHandling(async () => {
         const response = await fetch('/api/tools/test-variations', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
@@ -111,16 +110,16 @@ export function useTestVariations(initialTestId?: string | undefined) {
         }
         
         return await response.json();
-      },
-      errorContext,
-      { setLoading }
-    )();
+      }, false);
+    } finally {
+      setLoading(false);
+    }
   }, [errorContext]);
   
   const toggleScenarioEnabled = useCallback(async (testId: string, scenarioId: string, enabled: boolean) => {
-    return await withErrorHandling(
-      async () => {
-        setLoading(true);
+    setLoading(true);
+    try {
+      return await errorContext.withErrorHandling(async () => {
         const response = await fetch('/api/tools/test-variations?action=toggleEnabled', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -143,10 +142,10 @@ export function useTestVariations(initialTestId?: string | undefined) {
         }
         
         return data;
-      },
-      errorContext,
-      { setLoading }
-    )();
+      }, false);
+    } finally {
+      setLoading(false);
+    }
   }, [errorContext, variationData]);
   
   return {

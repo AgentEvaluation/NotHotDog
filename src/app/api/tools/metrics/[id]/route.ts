@@ -2,6 +2,7 @@ import { withApiHandler } from '@/lib/api-utils';
 import { dbService } from "@/services/db";
 import { auth } from "@clerk/nextjs/server";
 import { AuthorizationError, ValidationError, NotFoundError } from '@/lib/errors';
+import { updateMetricSchema, safeValidateRequest } from '@/lib/validations/api';
 
 export const GET = withApiHandler(async (
   request: Request,
@@ -33,12 +34,14 @@ export const PUT = withApiHandler(async (
     throw new AuthorizationError("Unauthorized");
   }
 
-  const metricData = await request.json();
+  const body = await request.json();
   
-  // Basic validation for required fields
-  if (!metricData.name || !metricData.type || !metricData.criticality) {
-    throw new ValidationError("Missing required metric fields");
+  const validation = safeValidateRequest(updateMetricSchema, { ...body, id });
+  if (!validation.success) {
+    throw new ValidationError(validation.error.errors.map(e => e.message).join(', '));
   }
+  
+  const metricData = validation.data;
   
   const updatedMetric = await dbService.updateMetric(id, metricData);
   return updatedMetric;

@@ -1,7 +1,8 @@
-import { withApiHandler } from '@/lib/api-utils';
+import { withApiHandler, requireAuthWithProfile } from '@/lib/api-utils';
 import { dbService } from "@/services/db";
 import { auth } from "@clerk/nextjs/server";
 import { AuthorizationError, ValidationError, NotFoundError } from '@/lib/errors';
+import { createMetricSchema, safeValidateRequest } from '@/lib/validations/api';
 
 export const GET = withApiHandler(async () => {
   const { userId } = await auth();
@@ -15,22 +16,16 @@ export const GET = withApiHandler(async () => {
 });
 
 export const POST = withApiHandler(async (request: Request) => {
-  const { userId } = await auth();
-  
-  if (!userId) {
-    throw new AuthorizationError("Unauthorized");
-  }
+  const { profile } = await requireAuthWithProfile();
 
-  const profile = await dbService.getProfileByClerkId(userId);
-  if (!profile || !profile.org_id) {
-    throw new NotFoundError("Profile not found");
-  }
-
-  const metricData = await request.json();
+  const body = await request.json();
   
-  if (!metricData.name || !metricData.type || !metricData.criticality) {
-    throw new ValidationError("Missing required metric fields");
+  const validation = safeValidateRequest(createMetricSchema, body);
+  if (!validation.success) {
+    throw new ValidationError(validation.error.errors.map(e => e.message).join(', '));
   }
+  
+  const metricData = validation.data;
   
   const newMetric = await dbService.createMetric({
     ...metricData,

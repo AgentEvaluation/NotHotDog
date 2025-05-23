@@ -16,6 +16,11 @@ export class ValidationService {
         Your response MUST be VALID JSON with this exact structure:
         {"isCorrect": boolean, "explanation": "reason", "metrics": [{"id": "metric-id", "score": number, "reason": "explanation"}]}
         
+        IMPORTANT: The "score" field MUST be a decimal number between 0 and 1:
+        - 0 means complete failure
+        - 0.5 means partial success
+        - 1 means complete success
+        
         DO NOT include any text outside the JSON object.
         Evaluate both expected output match and each metric.`;
       
@@ -24,13 +29,39 @@ export class ValidationService {
         
         try {
           // Try direct parsing first
-          return JSON.parse(content);
+          const parsed = JSON.parse(content);
+          
+          // Normalize scores if they're not in 0-1 range
+          if (parsed.metrics && Array.isArray(parsed.metrics)) {
+            parsed.metrics = parsed.metrics.map((m: any) => {
+              if (typeof m.score === 'number' && m.score > 1) {
+                // Assume it's a percentage and convert to 0-1 range
+                return { ...m, score: m.score / 100 };
+              }
+              return m;
+            });
+          }
+          
+          return parsed;
         } catch (directError) {
           try {
             // Extract JSON if model included explanatory text - improved regex
             const jsonMatch = content.match(/\{(?:[^{}]|{[^{}]*})*\}/);
             if (jsonMatch) {
-              return JSON.parse(jsonMatch[0]);
+              const parsed = JSON.parse(jsonMatch[0]);
+              
+              // Normalize scores if they're not in 0-1 range
+              if (parsed.metrics && Array.isArray(parsed.metrics)) {
+                parsed.metrics = parsed.metrics.map((m: any) => {
+                  if (typeof m.score === 'number' && m.score > 1) {
+                    // Assume it's a percentage and convert to 0-1 range
+                    return { ...m, score: m.score / 100 };
+                  }
+                  return m;
+                });
+              }
+              
+              return parsed;
             }
             throw new Error("No JSON found");
           } catch (extractError) {

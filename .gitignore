@@ -51,3 +51,6 @@ yarn.lock
 .env
 # clerk configuration (can include secrets)
 /.clerk/
+
+# Claude configuration
+CLAUDE.md

@@ -10,7 +10,6 @@ export interface ChatMessage {
   isCorrect? : boolean;
   metrics?: {
     responseTime?: number;
-    validationScore?: number;
     contextRelevance?: number;
   };
 }
@@ -27,7 +26,6 @@ export interface Conversation {
     correct: number;
     incorrect: number;
     responseTime: number[];
-    validationScores: number[];
     contextRelevance: number[];
     validationDetails?: {
       customFailure?: boolean;

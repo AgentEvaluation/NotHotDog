@@ -1,6 +1,16 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { CheckCircle2, XCircle, AlertCircle, TrendingUp, TrendingDown } from "lucide-react";
 
 interface MetricResult {
   id: string;
@@ -33,75 +43,144 @@ export default function MetricsView({
 
   if (metricResults.length === 0) {
     return (
-      <div className="h-64 flex items-center justify-center text-muted-foreground p-4">
-        <p>No custom metrics data available for this conversation.</p>
-      </div>
+      <Card className="border-dashed">
+        <div className="h-64 flex flex-col items-center justify-center text-muted-foreground p-4">
+          <AlertCircle className="w-12 h-12 mb-4 opacity-50" />
+          <p className="text-center">No custom metrics data available for this conversation.</p>
+          <p className="text-sm text-center mt-2">Metrics will appear here once configured and evaluated.</p>
+        </div>
+      </Card>
     );
   }
 
+  const getMetricIcon = (score: number) => {
+    return score === 1 ? (
+      <CheckCircle2 className="w-4 h-4 text-green-600" />
+    ) : (
+      <XCircle className="w-4 h-4 text-red-600" />
+    );
+  };
+
+  const getCriticalityColor = (metricName: string) => {
+    if (metricName?.toLowerCase().includes("hallucination")) return "text-red-600";
+    if (metricName?.toLowerCase().includes("critical")) return "text-orange-600";
+    return "text-yellow-600";
+  };
+
   return (
     <>
-      {/* filter buttons */}
-      <div className="flex gap-2 mb-4">
-        {["All", "Binary", "Numerical", "Critical Only"].map(f => (
-          <Button
-            key={f}
-            size="sm"
-            variant={metricFilter === f ? "outline" : "ghost"}
-            onClick={() => setMetricFilter(f as any)}
-          >
-            {f}
-          </Button>
-        ))}
-      </div>
-
-      {/* metrics table */}
-      <div className="overflow-x-auto">
-        <table className="w-full table-auto border-collapse">
-          <thead>
-            <tr className="bg-muted">
-              <th className="p-3 text-left">Metric</th>
-              <th className="p-3 text-left">Type</th>
-              <th className="p-3 text-left">Criticality</th>
-              <th className="p-3 text-left">Result</th>
-              <th className="p-3 text-right">Score</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredMetrics.map(m => (
-              <tr key={m.id} className="border-t">
-                <td className="p-3">
-                  <div className="font-medium">{m.name}</div>
-                  <div className="text-sm text-muted-foreground">{m.reason}</div>
-                </td>
-                <td className="p-3">
-                  <Badge variant="outline">
-                    {m.name?.toLowerCase().includes("time") ? "Numerical" : 
-                    m.name?.toLowerCase().includes("flow") ? "Binary Workflow" : 
-                    "Binary Qualitative"}
-                  </Badge>
-                </td>
-                <td className="p-3">
-                  <Badge 
-                    variant={m.name?.toLowerCase().includes("hallucination") ? "destructive" : "outline"}
-                  >
-                    {m.name?.toLowerCase().includes("hallucination") ? "High" : "Medium"}
-                  </Badge>
-                </td>
-                <td className="p-3">
-                  <Badge 
-                    variant="outline" 
-                    className={m.score === 1 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
-                  >
-                    {m.score === 1 ? "PASSED" : "FAILED"}
-                  </Badge>
-                </td>
-                <td className="p-3 text-right">{(m.score * 100).toFixed(0)}%</td>
-              </tr>
+      <Card>
+        <CardHeader>
+          <CardTitle>Metrics Evaluation</CardTitle>
+          <CardDescription>Detailed breakdown of metric results for this conversation</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {/* filter buttons */}
+          <div className="flex flex-wrap gap-2 mb-6">
+            {["All", "Binary", "Numerical", "Critical Only"].map(f => (
+              <Button
+                key={f}
+                size="sm"
+                variant={metricFilter === f ? "default" : "outline"}
+                onClick={() => setMetricFilter(f as any)}
+                className="transition-all"
+              >
+                {f}
+              </Button>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </div>
+
+          {/* Summary stats */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <Card className="p-4 bg-muted/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Metrics</p>
+                  <p className="text-2xl font-bold">{metricResults.length}</p>
+                </div>
+                <TrendingUp className="w-5 h-5 text-muted-foreground" />
+              </div>
+            </Card>
+            <Card className="p-4 bg-green-50 dark:bg-green-950/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Passed</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {filteredMetrics.filter(m => m.score === 1).length}
+                  </p>
+                </div>
+                <CheckCircle2 className="w-5 h-5 text-green-600" />
+              </div>
+            </Card>
+            <Card className="p-4 bg-red-50 dark:bg-red-950/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Failed</p>
+                  <p className="text-2xl font-bold text-red-600">
+                    {filteredMetrics.filter(m => m.score !== 1).length}
+                  </p>
+                </div>
+                <XCircle className="w-5 h-5 text-red-600" />
+              </div>
+            </Card>
+          </div>
+
+          {/* metrics table */}
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[40%]">Metric Details</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Criticality</TableHead>
+                  <TableHead>Result</TableHead>
+                  <TableHead className="text-right">Score</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredMetrics.map(m => (
+                  <TableRow key={m.id}>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          {getMetricIcon(m.score)}
+                          <span className="font-medium">{m.name}</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground pl-6">{m.reason}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="font-normal">
+                        {m.name?.toLowerCase().includes("time") ? "Numerical" : 
+                        m.name?.toLowerCase().includes("flow") ? "Workflow" : 
+                        "Qualitative"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`font-medium ${getCriticalityColor(m.name)}`}>
+                        {m.name?.toLowerCase().includes("hallucination") ? "High" : 
+                         m.name?.toLowerCase().includes("critical") ? "Medium" : 
+                         "Low"}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant={m.score === 1 ? "default" : "destructive"}
+                        className="gap-1"
+                      >
+                        {m.score === 1 ? "PASSED" : "FAILED"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-mono">
+                      {(m.score * 100).toFixed(0)}%
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
     </>
   );
 }

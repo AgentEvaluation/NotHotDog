@@ -1,9 +1,10 @@
 import React from "react";
 import { TestMessage } from "@/types/runs";
 import { CollapsibleSection } from "./CollapsibleSection";
-import { BarChart2, FileText } from "lucide-react";
+import { BarChart2, FileText, User, Bot } from "lucide-react";
 import ConversationAnalysis from "./ConversationAnalysis";
 import { Conversation } from "@/types/chat";
+import { Card } from "@/components/ui/card";
 
 interface ConversationViewProps {
   chat: Conversation;
@@ -12,49 +13,84 @@ interface ConversationViewProps {
 export default function ConversationView({ chat }: ConversationViewProps) {
   return (
     <div>
-      <h2 className="text-xl font-semibold">{chat.name}</h2>
-      <p className="text-sm text-muted-foreground">
-        View conversation and responses
-      </p>
-      <div className="space-y-6 mx-auto p-4">
-        {chat.messages.map((message: TestMessage) => (
-          <div key={message.id} className="space-y-2">
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold">{chat.name}</h2>
+        <p className="text-sm text-muted-foreground">
+          Conversation between {chat.personaName} and your AI agent
+        </p>
+      </div>
+      <div className="space-y-4">
+        {chat.messages.map((message: TestMessage, index) => {
+          // Calculate proper message numbers based on role
+          const userMessageCount = chat.messages.slice(0, index + 1).filter(m => m.role === 'user').length;
+          const assistantMessageCount = chat.messages.slice(0, index + 1).filter(m => m.role === 'assistant').length;
+          
+          return (
+          <div key={message.id} className="group">
             {message.role === "user" ? (
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#dbeafe] flex items-center justify-center flex-shrink-0 text-[#2563eb] font-bold">
-                  👤
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                    <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  </div>
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <div className="bg-[#eff6ff] text-[#1e3a8a] rounded-2xl px-5 py-4 shadow-sm">
-                    <CollapsibleJson content={message.content} />
+                  <div className="mb-1">
+                    <span className="text-sm font-medium">{chat.personaName || "User"}</span>
+                    <span className="text-xs text-muted-foreground ml-2">
+                      Message {userMessageCount}
+                    </span>
                   </div>
+                  <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900">
+                    <div className="p-4">
+                      <CollapsibleJson content={message.content} />
+                    </div>
+                  </Card>
                 </div>
               </div>
             ) : (
               <div className="flex items-start gap-3">
-                <div className="flex-1 overflow-hidden">
-                  <div className="bg-[#dcfce7] text-[#14532d] rounded-2xl px-5 py-4 shadow-sm">
-                    <CollapsibleJson content={message.content} />
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                    <Bot className="w-5 h-5 text-green-600 dark:text-green-400" />
                   </div>
                 </div>
-                <div className="w-8 h-8 rounded-full bg-[#bbf7d0] flex items-center justify-center flex-shrink-0 text-[#15803d] font-bold">
-                  🤖
+                <div className="flex-1 overflow-hidden">
+                  <div className="mb-1 flex items-center gap-2">
+                    <span className="text-sm font-medium">AI Agent</span>
+                    <span className="text-xs text-muted-foreground">
+                      Response {assistantMessageCount}
+                    </span>
+                    {message.metrics?.responseTime && (
+                      <span className="text-xs text-muted-foreground">
+                        • {message.metrics.responseTime}ms
+                      </span>
+                    )}
+                  </div>
+                  <Card className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900">
+                    <div className="p-4">
+                      <CollapsibleJson content={message.content} />
+                    </div>
+                  </Card>
+                  {message.metrics && (
+                    <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+                      {message.metrics.isHallucination !== null && (
+                        <span className={message.metrics.isHallucination ? "text-red-600" : "text-green-600"}>
+                          {message.metrics.isHallucination ? "Hallucination detected" : "No hallucination"}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
 
-        <div className="mt-6 space-y-4">
+        <div className="mt-8 space-y-4">
           <CollapsibleSection
-            title="Conversation Metrics"
-            icon={<BarChart2 className="h-4 w-4" />}
-          >
-            Coming soon...
-          </CollapsibleSection>
-
-          <CollapsibleSection
-            title="Analysis"
+            title="Conversation Analysis"
             icon={<FileText className="h-4 w-4" />}
             defaultOpen={true}
           >
@@ -76,13 +112,13 @@ function CollapsibleJson({ content }: { content: string }) {
       const parsed = JSON.parse(content);
       formattedContent = JSON.stringify(parsed, null, 2);
       return (
-        <pre className="font-mono text-sm p-4 rounded-xl overflow-x-auto whitespace-pre-wrap max-w-full bg-muted">
-          {formattedContent}
+        <pre className="font-mono text-sm overflow-x-auto whitespace-pre-wrap max-w-full">
+          <code>{formattedContent}</code>
         </pre>
       );
     }
-    return <div className="p-4 whitespace-pre-wrap text-sm max-w-full">{content}</div>;
+    return <div className="whitespace-pre-wrap text-sm max-w-full">{content}</div>;
   } catch {
-    return <div className="p-4 whitespace-pre-wrap text-sm max-w-full">{content}</div>;
+    return <div className="whitespace-pre-wrap text-sm max-w-full">{content}</div>;
   }
 }

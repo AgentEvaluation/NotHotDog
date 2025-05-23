@@ -38,7 +38,6 @@ export interface TestMessage {
   isCorrect?: boolean;
   explanation?: string;
   metrics?: {
-    validationScore?: number;
     responseTime?: number;
     isHallucination?: boolean | null;
   };

@@ -14,7 +14,6 @@ export class ConversationMemory extends BaseMemory {
       currentPath: [],
       metrics: {
         responseTime: [],
-        validationScores: [],
         contextRelevance: []
       }
     };
@@ -52,7 +51,6 @@ export class ConversationMemory extends BaseMemory {
       currentPath: [],
       metrics: {
         responseTime: [],
-        validationScores: [],
         contextRelevance: []
       }
     };

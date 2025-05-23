@@ -98,14 +98,15 @@ model conversation_messages {
   conversation_id    String             @db.Uuid
   role               String
   content            String
-  is_correct         Boolean?
   response_time      Int?
   validation_score   Float?
   metrics            Json?
+  message_order      Int                @default(autoincrement())
   created_at         DateTime?          @default(now()) @db.Timestamptz(6)
   test_conversations test_conversations @relation(fields: [conversation_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([conversation_id], map: "idx_conversation_messages_conv")
+  @@index([conversation_id, message_order], map: "idx_conversation_messages_order")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.

@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 
 export default function RunsPage() {
   return (
-    <div className="p-6">
+    <div className="container mx-auto py-6 px-4 max-w-7xl">
         <TestRunsDashboard />
     </div>
   );

@@ -35,10 +35,8 @@ export interface TestMessage {
   role: MessageRole;
   content: string;
   expectedOutput?: string;
-  isCorrect?: boolean;
   explanation?: string;
   metrics?: {
-    validationScore?: number;
     responseTime?: number;
     isHallucination?: boolean | null;
   };

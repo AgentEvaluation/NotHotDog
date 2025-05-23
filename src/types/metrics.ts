@@ -24,7 +24,6 @@ export interface ChatMetrics extends BaseMetrics {
   correct: number;
   incorrect: number;
   responseTime: number[];
-  validationScores: number[];
   contextRelevance: number[];
   validationDetails?: {
     customFailure?: boolean;

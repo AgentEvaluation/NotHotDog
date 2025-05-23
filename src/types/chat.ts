@@ -7,10 +7,8 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
-  isCorrect? : boolean;
   metrics?: {
     responseTime?: number;
-    validationScore?: number;
     contextRelevance?: number;
   };
 }
@@ -27,7 +25,6 @@ export interface Conversation {
     correct: number;
     incorrect: number;
     responseTime: number[];
-    validationScores: number[];
     contextRelevance: number[];
     validationDetails?: {
       customFailure?: boolean;

@@ -181,7 +181,6 @@ export const POST = withApiHandler(async (request: Request) => {
             correct: conversationValidation.isCorrect ? 1 : 0,
             incorrect: conversationValidation.isCorrect ? 0 : 1,
             responseTime: [result.validation.metrics.responseTime],
-            validationScores: [conversationValidation.isCorrect ? 1 : 0],
             contextRelevance: [1],
             validationDetails: {
               customFailure: !conversationValidation.isCorrect,
@@ -226,7 +225,6 @@ export const POST = withApiHandler(async (request: Request) => {
             correct: 0,
             incorrect: 0,
             responseTime: [],
-            validationScores: [],
             contextRelevance: [],
             metricResults: []
           },

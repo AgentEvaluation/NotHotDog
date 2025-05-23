@@ -4,7 +4,6 @@ export interface ConversationContext {
     currentPath: string[];
     metrics: {
       responseTime: number[];
-      validationScores: number[];
       contextRelevance: number[];
     };
   }

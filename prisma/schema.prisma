@@ -98,7 +98,6 @@ model conversation_messages {
   conversation_id    String             @db.Uuid
   role               String
   content            String
-  is_correct         Boolean?
   response_time      Int?
   validation_score   Float?
   metrics            Json?

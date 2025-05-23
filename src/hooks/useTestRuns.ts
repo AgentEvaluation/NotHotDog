@@ -15,8 +15,8 @@ export function useTestRuns() {
     await errorContext.withErrorHandling(async () => {
       const res = await fetch('/api/tools/test-runs');
       const response = await res.json();
-      const savedRuns = response.data;
-      setRuns(savedRuns);
+      const savedRuns = response.data || response || [];
+      setRuns(Array.isArray(savedRuns) ? savedRuns : []);
     });
   };
 

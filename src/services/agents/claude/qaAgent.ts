@@ -359,16 +359,8 @@ export class QaAgent {
         expectedOutput
       );
       
-      // Mark the final message with validation results
-      const validatedMessages = allMessages.map(msg => ({
-        ...msg,
-        isCorrect: msg.id === allMessages[allMessages.length - 1].id ? 
-          conversationValidation.isCorrect : 
-          true,
-        explanation: msg.id === allMessages[allMessages.length - 1].id ? 
-          conversationValidation.explanation : 
-          undefined
-      }));
+      // Messages don't need individual validation - it's done at conversation level
+      const validatedMessages = allMessages;
 
       // Format the final result
       return {
@@ -377,7 +369,7 @@ export class QaAgent {
           rawInput: ApiHandler.formatInput(initialMessage, this.config.apiConfig.inputFormat),
           rawOutput: finalApiResponse || {},
           chatResponse: currentResponse,
-          allMessages: validatedMessages
+          allMessages: allMessages
         },
         validation: {
           passedTest: conversationValidation.isCorrect,

@@ -7,7 +7,6 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
-  isCorrect? : boolean;
   metrics?: {
     responseTime?: number;
     contextRelevance?: number;

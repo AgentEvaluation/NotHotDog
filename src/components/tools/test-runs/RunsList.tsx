@@ -174,7 +174,7 @@ export default function RunsList({
 
       {isLoading ? (
         <LoadingSkeleton />
-      ) : runs.length === 0 ? (
+      ) : !runs || runs.length === 0 ? (
         <Card className="border-dashed">
           <div className="flex flex-col items-center justify-center py-16 px-4">
             <FileX className="h-12 w-12 text-muted-foreground mb-4" />
@@ -203,7 +203,7 @@ export default function RunsList({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {runs.map((run) => {
+              {runs?.map((run) => {
                 const successRate = run.metrics.total > 0 
                   ? Math.round((run.metrics.passed / run.metrics.total) * 100)
                   : 0;

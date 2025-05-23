@@ -114,11 +114,11 @@ export default function AgentConfigWizard({ onComplete, initialConfig }: AgentCo
         setTestResult(result.data);
       } else {
         // Show error in UI
-        alert(`Error: ${result.error}`);
+        toast.error(`Error: ${result.error}`);
       }
     } catch (error) {
       console.error('Error testing agent:', error);
-      alert('Failed to test agent. Please check your configuration.');
+      toast.error('Failed to test agent. Please check your configuration.');
     } finally {
       setIsLoading(false);
     }

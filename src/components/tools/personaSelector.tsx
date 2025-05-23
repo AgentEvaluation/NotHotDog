@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Users, UserCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Persona } from '@/types';
 import { useErrorContext } from '@/hooks/useErrorContext';
@@ -9,12 +10,14 @@ import ErrorDisplay from '@/components/common/ErrorDisplay';
 
 interface PersonaSelectorProps {
   selectedTest: string;
+  enhanced?: boolean;
 }
 
-export default function PersonaSelector({ selectedTest }: PersonaSelectorProps) {
+export default function PersonaSelector({ selectedTest, enhanced = false }: PersonaSelectorProps) {
   const [mapping, setMapping] = useState<{ personaIds: string[] } | null>(null);
   const selectedPersonas = mapping?.personaIds || [];
   const [personas, setPersonas] = useState<Persona[]>([]);
+  const [isLocalLoading, setIsLocalLoading] = useState(false);
   const errorContext = useErrorContext();
   
   // Use string for tracking the last loaded test ID instead of a boolean
@@ -26,12 +29,14 @@ export default function PersonaSelector({ selectedTest }: PersonaSelectorProps) 
     if (hasFetchedPersonas.current) return;
     
     const fetchPersonas = async () => {
+      setIsLocalLoading(true);
       await errorContext.withErrorHandling(async () => {
         const res = await fetch('/api/tools/personas');
         const data = await res.json();
         setPersonas(data.data);
         hasFetchedPersonas.current = true;
-      });
+      }, false); // Don't use global loading state
+      setIsLocalLoading(false);
     };
     
     fetchPersonas();
@@ -43,12 +48,14 @@ export default function PersonaSelector({ selectedTest }: PersonaSelectorProps) 
     if (!selectedTest || selectedTest === lastLoadedTestId.current) return;
     
     const fetchMapping = async () => {
+      setIsLocalLoading(true);
       await errorContext.withErrorHandling(async () => {
         const res = await fetch(`/api/tools/persona-mapping?agentId=${selectedTest}`);
         const data = await res.json();
         setMapping(data.data);
         lastLoadedTestId.current = selectedTest;
-      });
+      }, false); // Don't use global loading state
+      setIsLocalLoading(false);
     };
     
     fetchMapping();
@@ -83,9 +90,19 @@ export default function PersonaSelector({ selectedTest }: PersonaSelectorProps) 
   };
 
   return (
-    <Card className="bg-card text-card-foreground border border-border h-full">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg font-semibold">Select Testing Personas</CardTitle>
+    <Card className={cn(
+      "bg-card text-card-foreground border border-border",
+      enhanced ? "h-full" : "h-full"
+    )}>
+      <CardHeader className="pb-2">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold">3</div>
+          <CardTitle className="text-sm font-semibold">Map Personas</CardTitle>
+          <Badge variant="secondary" className="text-xs ml-auto">
+            {selectedPersonas.length} selected
+          </Badge>
+        </div>
+        <p className="text-xs text-muted-foreground">Choose user types to test scenarios with</p>
       </CardHeader>
       
       {errorContext.error && (
@@ -97,14 +114,50 @@ export default function PersonaSelector({ selectedTest }: PersonaSelectorProps) 
         </div>
       )}
       
-      <CardContent>
-        {errorContext.isLoading ? (
+      <CardContent className={cn(
+        "p-4",
+        enhanced && "overflow-y-auto max-h-[calc(100vh-18rem)]"
+      )}>
+        {isLocalLoading ? (
           <div className="flex justify-center py-4">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
           </div>
         ) : (
           <div className="flex flex-col space-y-3">
-            {personas.map((persona) => (
+            {personas.map((persona) => enhanced ? (
+              <div 
+                key={persona.id} 
+                className={cn(
+                  "border rounded-lg p-4 cursor-pointer transition-all shadow-sm",
+                  selectedPersonas.includes(persona.id)
+                    ? "border-primary bg-primary/5 shadow-md"
+                    : "border-border hover:shadow-md"
+                )}
+                onClick={() => handlePersonaSelect(persona.id)}
+              >
+                <div className="flex items-start gap-3">
+                  <UserCircle className={cn(
+                    "h-5 w-5 mt-0.5 flex-shrink-0",
+                    selectedPersonas.includes(persona.id)
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                  )} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-medium text-sm">
+                        {persona.name}
+                      </h3>
+                      {selectedPersonas.includes(persona.id) && (
+                        <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                      {persona.description}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
               <div key={persona.id} className="w-full">
                 <Button
                   variant="outline"
@@ -136,8 +189,14 @@ export default function PersonaSelector({ selectedTest }: PersonaSelectorProps) 
             ))}
 
             {personas.length === 0 && !errorContext.isLoading && (
-              <div className="text-center py-4 text-muted-foreground">
-                No personas available.
+              <div className="flex flex-col items-center justify-center h-32 text-center">
+                <div className="rounded-full bg-muted p-2 mb-2">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <h3 className="font-medium mb-1 text-sm">No personas available</h3>
+                <p className="text-xs text-muted-foreground">
+                  Create personas to test different user behaviors
+                </p>
               </div>
             )}
           </div>

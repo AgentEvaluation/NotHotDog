@@ -1,7 +1,2 @@
-import { TestScenario } from "@/types/test";
-
-export interface TestSet {
-  name: string;
-  description: string;
-  scenarios: TestScenario[];
-} 
+// This file is now redundant - use TestSet from @/types/test-sets instead
+export type { TestSet } from "@/types/test-sets"; 

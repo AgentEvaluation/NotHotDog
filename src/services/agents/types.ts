@@ -12,13 +12,5 @@ export interface AgentResponse {
   messages: BaseMessage[];
 }
 
-export interface QaAgentConfig {
-  modelId: string;
-  provider: string;
-  headers: Record<string, string>;
-  endpointUrl: string;
-  apiConfig: ApiConfig;
-  persona?: string;
-  userApiKey: string;
-  extraParams?: Record<string, any>;
-}
+// Use QaAgentConfig from claude/types.ts which is more complete
+export type { QaAgentConfig } from './claude/types';

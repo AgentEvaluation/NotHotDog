@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { MoreHorizontal, ArrowUpDown, Trash2, Edit } from "lucide-react"
-import { Metric } from "./types"
+import { Metric } from "@/types"
 
 function getCriticalityColor(criticality?: string) {
   switch (criticality) {

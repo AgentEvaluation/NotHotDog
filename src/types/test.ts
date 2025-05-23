@@ -4,9 +4,10 @@ import { Evaluation } from './test-sets';
 export interface TestScenario {
   id: string;
   scenario: string;
-  input: string
+  input?: string;
   expectedOutput: string;
-  type: 'transcript' | 'rule' | 'metric';
+  type?: 'transcript' | 'rule' | 'metric';
+  enabled?: boolean;
   metrics?: {
     [key: string]: number | undefined;
     sentimentAnalysis?: number;
@@ -31,15 +32,4 @@ export interface ConversationStep {
   }>;
 }
 
-export interface TestSet {
-  id: string;
-  name: string;
-  description: string;
-  scenarios: TestScenario[];
-  agentId: string;
-  agentName: string;
-  agentDescription?: string;
-  evaluations: Evaluation[];
-  createdAt: Date;
-  updatedAt: Date;
-}
+// TestSet moved to @/types/test-sets to avoid duplication

@@ -24,6 +24,14 @@ A hallucination occurs when the AI:
 4. Makes assertions that go beyond what can be reasonably inferred
 5. Drifts to completely unrelated topics (e.g., answering about weather when asked about laptop prices)
 6. Acts outside its described capabilities
+7. Assumes or provides specific details (locations, dates, names, quantities, identifiers, etc.) that were NOT requested or mentioned by the user
+8. Answers with specifics when the query was general (e.g., answering "Product X costs $99" when asked "What are your prices?")
+
+CRITICAL: When users ask general questions without specifics, the assistant should:
+- Request clarification if specifics are needed
+- Provide general information only
+- NOT assume or fabricate specific examples, instances, or details
+Any unrequested specific information IS a hallucination, regardless of domain.
 
 Consider the agent's described purpose and capabilities when evaluating. The agent should:
 - Stay on topic and relevant to the conversation

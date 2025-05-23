@@ -16,7 +16,7 @@ export default function ConversationView({ chat }: ConversationViewProps) {
       <p className="text-sm text-muted-foreground">
         View conversation and responses
       </p>
-      <div className="space-y-6 max-w-[800px] mx-auto p-4">
+      <div className="space-y-6 mx-auto p-4">
         {chat.messages.map((message: TestMessage) => (
           <div key={message.id} className="space-y-2">
             {message.role === "user" ? (

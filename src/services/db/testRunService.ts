@@ -98,23 +98,35 @@ export class TestRunService {
             personaName: tc.personas?.name,
             scenario: conversation.scenario_id,
             status: conversation.status as 'running' | 'passed' | 'failed',
-            messages: conversation.conversation_messages.map(msg => ({
-              id: msg.id,
-              chatId: msg.conversation_id,
-              role: msg.role as "user" | "assistant",
-              content: msg.content,
-              expectedOutput: undefined,
-              isCorrect: msg.is_correct ?? false,
-              explanation: undefined,
-              metrics: {
+            messages: conversation.conversation_messages.map(msg => {
+              // Build metrics object from both individual fields and JSON metrics
+              const metrics: any = {
                 responseTime: msg.response_time ?? 0,
                 validationScore: msg.validation_score ?? 0
+              };
+              
+              // If there's a metrics JSON object, merge it in
+              if (msg.metrics && typeof msg.metrics === 'object') {
+                Object.assign(metrics, msg.metrics);
               }
-            })),
+              
+              return {
+                id: msg.id,
+                chatId: msg.conversation_id,
+                role: msg.role as "user" | "assistant",
+                content: msg.content,
+                expectedOutput: undefined,
+                isCorrect: msg.is_correct ?? false,
+                explanation: undefined,
+                metrics: metrics
+              };
+            }),
             metrics: {
               correct: 0,
               incorrect: 0,
-              responseTime: [],
+              responseTime: conversation.conversation_messages
+              .filter(msg => msg.role === 'assistant')
+              .map(msg => msg.response_time ?? 0),
               validationScores: [],
               contextRelevance: [],
               metricResults: conversation.test_run_metrics?.map(trm => ({
@@ -182,7 +194,12 @@ async updateTestRun(testRun: TestRun) {
     }
   }
   
-  async updateTestConversationStatus(conversationId: string, status: string, errorMessage?: string) {
+  async updateTestConversationStatus(
+    conversationId: string, 
+    status: string, 
+    errorMessage?: string,
+    validationResult?: { isCorrect: boolean; explanation: string }
+  ) {
     try {
       const updateData: any = {
         status: status
@@ -190,6 +207,11 @@ async updateTestRun(testRun: TestRun) {
       
       if (errorMessage) {
         updateData.error_message = errorMessage;
+      }
+      
+      if (validationResult) {
+        updateData.is_correct = validationResult.isCorrect;
+        updateData.validation_reason = validationResult.explanation;
       }
       
       return await prisma.test_conversations.update({

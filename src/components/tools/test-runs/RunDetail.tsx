@@ -20,33 +20,30 @@ export default function RunDetail({
   const { error, clearError } = useErrorContext();
   
   return (
-    <div className="p-5 space-y-3 max-w-6xl mx-auto">
+    <div className="w-full mx-auto">
       {error && (
         <ErrorDisplay 
           error={error}
           onDismiss={clearError}
-          className="mb-4"
+          className="mb-3"
         />
       )}
       
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={onBack}>
-          ← Back to Runs
+      <div className="-mt-1 mb-1">
+        <Button variant="ghost" size="sm" onClick={onBack}>
+            ← Back to Runs
         </Button>
       </div>
 
-      <div>
-        <h2 className="text-2xl font-semibold">Run #{run.name}</h2>
-        <p className="text-sm text-muted-foreground">
-          All conversations in this test run
-        </p>
+      <div className="mb-1">
+        <h2 className="text-xl font-semibold">{run.name}</h2>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2 w-full">
         {(run.chats || []).map((chat) => (
           <div
             key={chat.id}
-            className="flex items-center justify-between p-4 bg-background border border-border rounded-xl cursor-pointer hover:bg-muted overflow-hidden"
+            className="flex items-center justify-between p-2 bg-background border border-border rounded-md cursor-pointer hover:bg-muted overflow-hidden w-full"
             onClick={() => onSelectChat(chat)}
           >
             <div className="flex-1 min-w-0">

@@ -23,25 +23,29 @@ export class ValidationService {
         const content = typeof result.content === 'string' ? result.content : JSON.stringify(result.content);
         
         try {
-          // Extract JSON if model included explanatory text
-          const jsonMatch = content.match(/(\{.*\})/s);
-          if (jsonMatch) {
-            try {
-              return JSON.parse(jsonMatch[0]);
-            } catch (extractError) {
-              console.error("Failed to extract valid JSON:", extractError);
-            }
-          }
-          
-          // Try direct parsing as fallback
+          // Try direct parsing first
           return JSON.parse(content);
-        } catch (error) {
-          console.error("Invalid JSON response:", error);
-          return {
-            isCorrect: false,
-            explanation: "Failed to parse evaluation results",
-            metrics: []
-          };
+        } catch (directError) {
+          try {
+            // Extract JSON if model included explanatory text - improved regex
+            const jsonMatch = content.match(/\{(?:[^{}]|{[^{}]*})*\}/);
+            if (jsonMatch) {
+              return JSON.parse(jsonMatch[0]);
+            }
+            throw new Error("No JSON found");
+          } catch (extractError) {
+            console.error("Failed to extract valid JSON:", extractError);
+            console.error("Raw content:", content);
+            return {
+              isCorrect: false,
+              explanation: "Failed to parse evaluation results",
+              metrics: metrics.map(m => ({
+                id: m.id,
+                score: 0,
+                reason: "Evaluation failed due to parsing error"
+              }))
+            };
+          }
         }
       }
     
@@ -72,6 +76,7 @@ export class ValidationService {
         expectedOutputEvaluation = JSON.parse(contentWithoutMetrics);
       } catch (error) {
         console.error("Model did not return valid JSON for expected output evaluation:", error);
+        console.error("Raw content:", contentWithoutMetrics);
         expectedOutputEvaluation = {
           isCorrect: false,
           explanation: "Model returned invalid JSON during expected output evaluation."

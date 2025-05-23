@@ -24,8 +24,8 @@ export interface Rule {
     userApiKey: string;
     extraParams?: Record<string, any>;
     conversationId?: string;
+    agentDescription: string; 
   }
-  
 
   export interface TestResult {
     conversation: {

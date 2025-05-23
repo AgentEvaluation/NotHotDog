@@ -40,11 +40,6 @@ export interface TestMessage {
   metrics?: {
     validationScore?: number;
     responseTime?: number;
-    tokenUsage?: {
-      prompt: number;
-      completion: number;
-      total: number;
-    };
-    isHallucination?: boolean;
+    isHallucination?: boolean | null;
   };
 }

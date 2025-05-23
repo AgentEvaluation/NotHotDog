@@ -4,7 +4,6 @@ import { useTestRuns } from './useTestRuns';
 import { ModelFactory } from '@/services/llm/modelfactory';
 import { useErrorContext } from './useErrorContext';
 import ApiClient from '@/lib/api-client';
-import { withErrorHandling } from '@/utils/error-handlers';
 
 export type TestExecutionStatus = 'idle' | 'connecting' | 'running' | 'completed' | 'failed';
 
@@ -21,25 +20,25 @@ export function useTestExecution() {
   const [savedAgentConfigs, setSavedAgentConfigs] = useState<Array<{ id: string, name: string }>>([]);
 
   useEffect(() => {
-    withErrorHandling(async () => {
+    errorContext.withErrorHandling(async () => {
       const data = await ApiClient.get('/api/tools/agent-config');
       setSavedAgentConfigs(data.map((cfg: any) => ({
         id: cfg.id,
         name: cfg.name
       })));
-    }, errorContext)();
+    });
   }, [errorContext]);
 
   /**
    * Executes a test for the given test ID
    */
   const executeTest = async (testId: string) => {
-    return await withErrorHandling(
-      async () => {
-        // Clear any previous errors and set initial state
-        errorContext.clearError();
-        setStatus('connecting');
+    try {
+      // Clear any previous errors and set initial state
+      errorContext.clearError();
+      setStatus('connecting');
 
+      return await errorContext.withErrorHandling(async () => {
         // Validate model configuration
         const modelConfig = ModelFactory.getSelectedModelConfig();
         if (!modelConfig) {
@@ -65,14 +64,11 @@ export function useTestExecution() {
         addRun(completedRun);
         
         return completedRun;
-      },
-      errorContext,
-      {
-        onError: () => {
-          setStatus('failed');
-        }
-      }
-    )();
+      });
+    } catch (error) {
+      setStatus('failed');
+      throw error;
+    }
   };
 
   /**

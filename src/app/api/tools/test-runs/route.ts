@@ -1,4 +1,4 @@
-import { withApiHandler } from '@/lib/api-utils';
+import { withApiHandler, requireAuthWithProfile } from '@/lib/api-utils';
 import { NotFoundError, ForbiddenError, ValidationError, ExternalAPIError, AuthorizationError } from '@/lib/errors';
 import { dbService } from '@/services/db';
 import { auth } from '@clerk/nextjs/server';
@@ -8,6 +8,7 @@ import { TestRun } from '@/types/runs';
 import { Conversation } from '@/types/chat';
 import { Rule } from '@/services/agents/claude/types';
 import { LLMProvider } from '@/services/llm/enums';
+import { createTestRunSchema, safeValidateRequest } from '@/lib/validations/api';
 
 export const GET = withApiHandler(async (request: Request) => {
   const { userId } = await auth();
@@ -20,17 +21,16 @@ export const GET = withApiHandler(async (request: Request) => {
 });
 
 export const POST = withApiHandler(async (request: Request) => {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new ForbiddenError('Unauthorized');
-  }
+  const { userId, profile } = await requireAuthWithProfile();
 
   const body = await request.json();
-  const testId = body.testId;
   
-  if (!testId) {
-    throw new ValidationError('Test ID is required');
+  const validation = safeValidateRequest(createTestRunSchema, body);
+  if (!validation.success) {
+    throw new ValidationError(validation.error.errors.map(e => e.message).join(', '));
   }
+  
+  const { testId } = validation.data;
 
   // Setup API key configuration
   const apiKey = request.headers.get("x-api-key");
@@ -49,12 +49,6 @@ export const POST = withApiHandler(async (request: Request) => {
   
   if (!apiKey) {
     throw new ValidationError('API key is missing. Please configure in settings.');
-  }
-
-  // Get user profile
-  const profile = await dbService.getProfileByClerkId(userId);
-  if (!profile) {
-    throw new NotFoundError('User profile not found');
   }
 
   // Fetch all the necessary data

@@ -44,71 +44,52 @@ export function useAgentConfig() {
   // Only fetch agents on initial mount
   useEffect(() => {
     if (!initialAgentFetchComplete.current) {
-      const fetchAgents = async () => {
-        try {
-          setLoading(true);
-          const res = await fetch("/api/tools/agent-config");
-          const result = await res.json();
-          const data = result.data;
-          
-          // Make sure we have valid data
-          if (Array.isArray(data)) {
-            setSavedAgents(data.map((cfg: any) => ({
-              id: cfg.id,
-              name: cfg.name,
-              agentEndpoint: cfg.endpoint,
-              headers: cfg.headers
-            })));
-          } else {
-            console.error("Unexpected data format:", data);
-          }
-          
-          initialAgentFetchComplete.current = true;
-        } catch (error) {
-          console.error("Error fetching agents:", error);
-          errorContext.handleError(error);
-        } finally {
-          setLoading(false);
+      errorContext.withErrorHandling(async () => {
+        const res = await fetch("/api/tools/agent-config");
+        const result = await res.json();
+        const data = result.data;
+        
+        // Make sure we have valid data
+        if (Array.isArray(data)) {
+          setSavedAgents(data.map((cfg: any) => ({
+            id: cfg.id,
+            name: cfg.name,
+            agentEndpoint: cfg.endpoint,
+            headers: cfg.headers
+          })));
+        } else {
+          console.error("Unexpected data format:", data);
         }
-      };
-      
-      fetchAgents();
+        
+        initialAgentFetchComplete.current = true;
+      });
     }
   }, [errorContext]);
 
   // Fix for the user details fetch
   useEffect(() => {
     if (isSignedIn && user && user.id && !initialOrgDetailsFetchComplete.current) {
-      const loadOrgDetails = async () => {
-        try {
-          const res = await fetch(`/api/auth/user-details?clerkId=${user.id}`);
-          if (!res.ok) {
-            throw new Error(`API error: ${res.status}`);
-          }
-          
-          const result = await res.json();
-          const data = result.data;
-          
-          if (data && data.organization) {
-            setOrgId(data.organization.id);
-            setUserId(data.profile?.id || null);
-          }
-          
-          initialOrgDetailsFetchComplete.current = true;
-        } catch (error) {
-          console.error("Error loading org details:", error);
-          errorContext.handleError(error);
+      errorContext.withErrorHandling(async () => {
+        const res = await fetch(`/api/auth/user-details?clerkId=${user.id}`);
+        if (!res.ok) {
+          throw new Error(`API error: ${res.status}`);
         }
-      };
-      
-      loadOrgDetails();
+        
+        const result = await res.json();
+        const data = result.data;
+        
+        if (data && data.organization) {
+          setOrgId(data.organization.id);
+          setUserId(data.profile?.id || null);
+        }
+        
+        initialOrgDetailsFetchComplete.current = true;
+      }, false);
     }
   }, [isSignedIn, user, errorContext]);
   
   const loadAgent = async (agentId: string) => {
-    try {
-      setLoading(true);
-      
+    return await errorContext.withErrorHandling(async () => {
       const res = await fetch(`/api/tools/agent-config?id=${agentId}`);
       if (!res.ok) {
         throw new Error(`Failed to fetch agent config: ${res.status}`);
@@ -142,18 +123,11 @@ export function useAgentConfig() {
       setCurrentAgentId(data.id);
       
       return true;
-    } catch (error) {
-      console.error("Error loading agent:", error);
-      errorContext.handleError(error);
-      return false;
-    } finally {
-      setLoading(false);
-    }
+    }) ?? false;
   };
 
   const testManually = async () => {
-    try {
-      setLoading(true);
+    return await errorContext.withErrorHandling(async () => {
       const startTime = Date.now();
       
       let parsedBody;
@@ -178,19 +152,11 @@ export function useAgentConfig() {
       setResponseTime(Date.now() - startTime);
       
       return true;
-    } catch (error) {
-      console.error("Error testing manually:", error);
-      errorContext.handleError(error);
-      return false;
-    } finally {
-      setLoading(false);
-    }
+    }) ?? false;
   };
 
   const saveTest = async () => {
-    try {
-      setLoading(true);
-      
+    return await errorContext.withErrorHandling(async () => {
       const payload = {
         id: isEditMode ? currentAgentId : undefined,
         name: testName,
@@ -239,13 +205,7 @@ export function useAgentConfig() {
       
       setIsEditMode(false);
       return true;
-    } catch (error) {
-      console.error("Error saving test:", error);
-      errorContext.handleError(error);
-      return false;
-    } finally {
-      setLoading(false);
-    }
+    }) ?? false;
   };
 
   return {

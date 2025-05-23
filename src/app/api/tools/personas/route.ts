@@ -1,4 +1,4 @@
-import { withApiHandler } from '@/lib/api-utils';
+import { withApiHandler, requireAuthWithProfile } from '@/lib/api-utils';
 import { dbService } from "@/services/db";
 import { auth } from "@clerk/nextjs/server";
 import { mapToUIPersona } from "@/lib/utils";
@@ -6,6 +6,7 @@ import { generateSystemPromptForPersona } from "@/services/persona";
 import { ModelFactory } from "@/services/llm/modelfactory";
 import { LLMProvider } from "@/services/llm/enums";
 import { AuthorizationError, ValidationError, NotFoundError } from '@/lib/errors';
+import { createPersonaSchema, safeValidateRequest } from '@/lib/validations/api';
 
 export const GET = withApiHandler(async () => {
   const { userId } = await auth();
@@ -21,24 +22,16 @@ export const GET = withApiHandler(async () => {
 });
 
 export const POST = withApiHandler(async (request: Request) => {
-  const { userId } = await auth();
-  
-  if (!userId) {
-    throw new AuthorizationError("Unauthorized");
-  }
+  const { profile } = await requireAuthWithProfile();
 
-  const profile = await dbService.getProfileByClerkId(userId);
-  if (!profile || !profile.org_id) {
-    throw new NotFoundError("Profile not found");
-  }
-
-  const personaData = await request.json();
+  const body = await request.json();
   
-  if (!personaData.name || personaData.temperature === undefined || 
-      !personaData.messageLength || !personaData.primaryIntent ||
-      !personaData.communicationStyle) {
-    throw new ValidationError("Missing required persona fields");
+  const validation = safeValidateRequest(createPersonaSchema, body);
+  if (!validation.success) {
+    throw new ValidationError(validation.error.errors.map(e => e.message).join(', '));
   }
+  
+  const personaData = validation.data;
 
   const apiKey = request.headers.get("x-api-key");
   if (!apiKey) {

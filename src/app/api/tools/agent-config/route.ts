@@ -1,21 +1,13 @@
-import { withApiHandler } from '@/lib/api-utils';
+import { withApiHandler, requireAuthWithProfile } from '@/lib/api-utils';
 import { auth } from '@clerk/nextjs/server';
 import { dbService } from '@/services/db';
 import { AuthorizationError, NotFoundError, ValidationError, ForbiddenError } from '@/lib/errors';
+import { agentConfigSchema, safeValidateRequest } from '@/lib/validations/api';
 
 export const GET = withApiHandler(async (request: Request) => {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
-  const { userId } = await auth();
-
-  if (!userId) {
-    throw new AuthorizationError('User not authenticated');
-  }
-  
-  const userProfile = await dbService.getProfileByClerkId(userId);
-  if (!userProfile || !userProfile.org_id) {
-    throw new ForbiddenError('User organization not found');
-  }
+  const { userId, profile: userProfile } = await requireAuthWithProfile();
   
   if (id) {
     const config = await dbService.getAgentConfigAll(id);
@@ -33,16 +25,16 @@ export const GET = withApiHandler(async (request: Request) => {
 });
 
 export const POST = withApiHandler(async (request: Request) => {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new AuthorizationError('User not authenticated');
+  const { profile: userProfile } = await requireAuthWithProfile();
+  
+  const body = await request.json();
+  
+  const validation = safeValidateRequest(agentConfigSchema, body);
+  if (!validation.success) {
+    throw new ValidationError(validation.error.errors.map(e => e.message).join(', '));
   }
   
-  const configData = await request.json();
-  const userProfile = await dbService.getProfileByClerkId(userId);
-  if (!userProfile || !userProfile.org_id) {
-    throw new ForbiddenError('User organization not found');
-  }
+  const configData = validation.data;
   
   // Set org_id and created_by from the authenticated user's profile
   configData.org_id = userProfile.org_id;
@@ -53,20 +45,19 @@ export const POST = withApiHandler(async (request: Request) => {
 });
 
 export const PUT = withApiHandler(async (request: Request) => {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new AuthorizationError('User not authenticated');
-  }
+  const { profile: userProfile } = await requireAuthWithProfile();
   
-  const configData = await request.json();
-  if (!configData.id) {
+  const body = await request.json();
+  if (!body.id) {
     throw new ValidationError('Config ID is required');
   }
   
-  const userProfile = await dbService.getProfileByClerkId(userId);
-  if (!userProfile || !userProfile.org_id) {
-    throw new ForbiddenError('User organization not found');
+  const validation = safeValidateRequest(agentConfigSchema, body);
+  if (!validation.success) {
+    throw new ValidationError(validation.error.errors.map(e => e.message).join(', '));
   }
+  
+  const configData = validation.data;
   
   // Ensure org_id matches the user's organization
   configData.org_id = userProfile.org_id;
@@ -76,19 +67,11 @@ export const PUT = withApiHandler(async (request: Request) => {
 });
 
 export const DELETE = withApiHandler(async (request: Request) => {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new AuthorizationError('User not authenticated');
-  }
+  const { profile: userProfile } = await requireAuthWithProfile();
   
   const { configId, org_id } = await request.json();
   if (!configId) {
     throw new ValidationError('configId is required');
-  }
-  
-  const userProfile = await dbService.getProfileByClerkId(userId);
-  if (!userProfile || !userProfile.org_id) {
-    throw new ForbiddenError('User organization not found');
   }
   
   if (org_id !== userProfile.org_id) {

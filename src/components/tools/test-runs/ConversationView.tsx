@@ -20,12 +20,24 @@ export default function ConversationView({ chat }: ConversationViewProps) {
         </p>
       </div>
       <div className="space-y-4">
-        {chat.messages.map((message: TestMessage, index) => {
-          // Calculate proper message numbers based on role
-          const userMessageCount = chat.messages.slice(0, index + 1).filter(m => m.role === 'user').length;
-          const assistantMessageCount = chat.messages.slice(0, index + 1).filter(m => m.role === 'assistant').length;
+        {(() => {
+          // Precompute message counts for O(n) complexity
+          let userCount = 0;
+          let assistantCount = 0;
+          const messageCountsMap = new Map<string, { userCount: number; assistantCount: number }>();
           
-          return (
+          chat.messages.forEach((msg) => {
+            if (msg.role === 'user') userCount++;
+            else if (msg.role === 'assistant') assistantCount++;
+            messageCountsMap.set(msg.id, { userCount, assistantCount });
+          });
+          
+          return chat.messages.map((message: TestMessage, index) => {
+            const counts = messageCountsMap.get(message.id) || { userCount: 0, assistantCount: 0 };
+            const userMessageCount = counts.userCount;
+            const assistantMessageCount = counts.assistantCount;
+            
+            return (
           <div key={message.id} className="group">
             {message.role === "user" ? (
               <div className="flex items-start gap-3">
@@ -85,8 +97,9 @@ export default function ConversationView({ chat }: ConversationViewProps) {
               </div>
             )}
           </div>
-          );
-        })}
+            );
+          });
+        })()}
 
         <div className="mt-8 space-y-4">
           <CollapsibleSection

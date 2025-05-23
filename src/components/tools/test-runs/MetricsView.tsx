@@ -23,6 +23,7 @@ export default function MetricsView({
 }: MetricsViewProps) {
   
   const filteredMetrics = metricResults.filter(m => {
+    if (!m || !m.name) return false; // Skip invalid metrics
     if (metricFilter === "All") return true;
     if (metricFilter === "Binary") return true; // Simplified for now
     if (metricFilter === "Numerical") return m.name.toLowerCase().includes("time");
@@ -75,16 +76,16 @@ export default function MetricsView({
                 </td>
                 <td className="p-3">
                   <Badge variant="outline">
-                    {m.name.toLowerCase().includes("time") ? "Numerical" : 
-                    m.name.toLowerCase().includes("flow") ? "Binary Workflow" : 
+                    {m.name?.toLowerCase().includes("time") ? "Numerical" : 
+                    m.name?.toLowerCase().includes("flow") ? "Binary Workflow" : 
                     "Binary Qualitative"}
                   </Badge>
                 </td>
                 <td className="p-3">
                   <Badge 
-                    variant={m.name.toLowerCase().includes("hallucination") ? "destructive" : "outline"}
+                    variant={m.name?.toLowerCase().includes("hallucination") ? "destructive" : "outline"}
                   >
-                    {m.name.toLowerCase().includes("hallucination") ? "High" : "Medium"}
+                    {m.name?.toLowerCase().includes("hallucination") ? "High" : "Medium"}
                   </Badge>
                 </td>
                 <td className="p-3">

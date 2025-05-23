@@ -6,6 +6,7 @@ import CustomUserDropdown from "@/components/navigation/CustomUserDropdown";
 import SignupHandler from '@/components/authentication/SignupHandler';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { ErrorProvider } from '@/hooks/useErrorContext';
+import { Toaster } from '@/components/ui/toaster';
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -49,6 +50,7 @@ export default function RootLayout({
                 <main className="flex min-h-screen flex-col">
                   {children}
                 </main>
+                <Toaster />
               </ErrorProvider>
             </ErrorBoundary>
           </ThemeProvider>

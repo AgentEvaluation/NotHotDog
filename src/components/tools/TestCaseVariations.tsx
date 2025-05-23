@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import WarningDialog from "@/components/config/WarningDialog";
-import { Plus, Edit, Trash, Upload } from "lucide-react";
+import { Plus, Edit, Trash, Upload, MoreVertical, Sparkles, FileText, CheckCircle } from "lucide-react";
 import { Loading } from "../common/Loading";
 import { useTestVariations } from "@/hooks/useTestVariations";
 import { TestVariation } from "@/types/variations";
@@ -11,9 +12,16 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import ScenarioFileUpload from "./ScenarioFileUpload";
 import { ModelFactory } from "@/services/llm/modelfactory";
 import { Switch } from "@/components/ui/switch";
-import { TestCase } from "./types";
+import { TestScenario as TestCase } from "@/types/test";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import ErrorDisplay from "@/components/common/ErrorDisplay";
 import { useErrorContext } from "@/hooks/useErrorContext";
+import { cn } from "@/lib/utils";
 
 interface EditingState {
   scenario: string;
@@ -22,8 +30,10 @@ interface EditingState {
 
 export function TestCaseVariations({
   selectedTestId,
+  enhanced = false,
 }: {
   selectedTestId: string | undefined;
+  enhanced?: boolean;
 }) {
   const [generatedCases, setGeneratedCases] = useState<TestCase[]>([]);
   const [editingState, setEditingState] = useState<EditingState | null>(null);
@@ -229,48 +239,59 @@ export function TestCaseVariations({
   const showBulkActions = generatedCases.length > 1 && selectedIds.length > 0;
 
   return (
-    <Card className="bg-card text-card-foreground border border-border h-screen overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg font-semibold">Test Case Variations</CardTitle>
-      </CardHeader>
+    <Card className={cn(
+      "bg-card text-card-foreground border border-border",
+      enhanced ? "h-full overflow-hidden flex flex-col" : "h-screen overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent"
+    )}>
+      <CardHeader className="space-y-2 pb-2">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold">2</div>
+          <CardTitle className="text-sm font-semibold">Test Scenarios</CardTitle>
+          <Badge variant="secondary" className="text-xs ml-auto">
+            {generatedCases.filter(tc => tc.enabled !== false).length} active
+          </Badge>
+        </div>
+        <p className="text-xs text-muted-foreground -mt-1">Define test cases for different situations</p>
 
-      {errorContext.error && (
-        <div className="px-6 mb-4">
+        {errorContext.error && (
           <ErrorDisplay 
             error={errorContext.error} 
             onDismiss={errorContext.clearError} 
           />
-        </div>
-      )}
+        )}
 
-      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        {loading || errorContext.isLoading ? (
-          <div className="fixed inset-0 flex items-center justify-center bg-background bg-opacity-50 z-50">
-            <Loading size="lg" message="Processing..." />
+        <div className="flex flex-wrap items-center justify-between gap-2 -mt-1">
+        {/* Loading indicator in header */}
+        {(loading || errorContext.isLoading) && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-md">
+            <div className="animate-spin h-3 w-3 border border-muted-foreground/30 border-t-muted-foreground rounded-full" />
+            <span>Generating scenarios...</span>
           </div>
-        ) : null}
+        )}
 
         {/* Left group: Add / Generate / Upload */}
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           {selectedTestId && (generatedCases.length > 0 ? (
             <>
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 px-3"
+                className="h-7 px-2 text-xs"
                 onClick={addNewTestCase}
+                disabled={loading || errorContext.isLoading}
               >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Test Case
+                <Plus className="h-3 w-3 mr-1" />
+                Add
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 px-3"
+                className="h-7 px-2 text-xs"
                 onClick={() => setShowFileUploadDialog(true)}
+                disabled={loading || errorContext.isLoading}
               >
-                <Upload className="h-4 w-4 mr-2" />
-                Upload
+                <Upload className="h-3 w-3 mr-1" />
+                Import
               </Button>
             </>
           ) : (
@@ -279,31 +300,41 @@ export function TestCaseVariations({
                 size="sm"
                 onClick={generateTestCases}
                 disabled={loading || errorContext.isLoading}
+                className="h-7 px-3 text-xs"
               >
-                <Plus className="h-4 w-4 mr-2" />
-                Generate Scenarios
+                {loading || errorContext.isLoading ? (
+                  <>
+                    <div className="animate-spin h-3 w-3 border border-current border-t-transparent rounded-full mr-1" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    Generate
+                  </>
+                )}
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 px-3"
+                className="h-7 px-2 text-xs"
                 onClick={() => setShowFileUploadDialog(true)}
-                disabled={!selectedTestId}
+                disabled={!selectedTestId || loading || errorContext.isLoading}
               >
-                <Upload className="h-4 w-4 mr-2" />
-                Upload
+                <Upload className="h-3 w-3 mr-1" />
+                Import
               </Button>
             </>
           ))}
         </div>
 
         {/* Right group: Select All / Delete Selected */}
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           {generatedCases.length > 0 && (
-            <Button size="sm" onClick={selectAllCases}>
+            <Button size="sm" onClick={selectAllCases} variant="ghost" className="h-7 px-2 text-xs">
               {selectedIds.length === generatedCases.length
-                ? "Deselect All"
-                : "Select All"}
+                ? "None"
+                : "All"}
             </Button>
           )}
           {selectedIds.length > 0 && (
@@ -311,77 +342,128 @@ export function TestCaseVariations({
               size="sm"
               variant="destructive"
               onClick={() => deleteTestCases(selectedIds)}
+              className="h-7 px-2 text-xs"
             >
-              Delete Selected
+              Delete ({selectedIds.length})
             </Button>
           )}
         </div>
+        </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className={cn(
+        enhanced ? "flex-1 overflow-y-auto space-y-4 p-4" : "space-y-4 p-4"
+      )}>
         {generatedCases.map((testCase) => (
-          <div key={testCase.id} className="w-full">
-            <div className="flex items-center w-full">
-              <input
-                type="checkbox"
-                checked={selectedIds.includes(testCase.id)}
-                onChange={() => toggleSelectCase(testCase.id)}
-                className="mr-2"
-              />
-              {editingId === testCase.id ? (
-                <Card className="bg-card text-card-foreground border border-border p-4 flex-1 rounded-md shadow-sm w-full">
-                  <CardContent className="pt-4 space-y-4 flex-1">
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">
-                        Test Scenario
-                      </label>
-                      <Textarea
-                        value={editingState?.scenario || ""}
-                        onChange={(e) =>
-                          setEditingState((prev) => ({
-                            ...prev!,
-                            scenario: e.target.value,
-                          }))
-                        }
-                        placeholder="Describe the test scenario in plain English..."
-                        className="mt-1 w-full resize-y rounded-md border border-input bg-card text-foreground px-2 py-1 text-sm w-full"
-                        />
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">
-                        Expected Output
-                      </label>
-                      <Textarea
-                        value={editingState?.expectedOutput || ""}
-                        onChange={(e) =>
-                          setEditingState((prev) => ({
-                            ...prev!,
-                            expectedOutput: e.target.value,
-                          }))
-                        }
-                        placeholder="Describe what should happen..."
-                        className="mt-1 w-full h-28 overflow-y-auto"
+          <div key={testCase.id} className="flex items-center gap-3 w-full">
+            <input
+              type="checkbox"
+              checked={selectedIds.includes(testCase.id)}
+              onChange={() => toggleSelectCase(testCase.id)}
+              className="flex-shrink-0"
+            />
+            {editingId === testCase.id ? (
+              <div className="border border-primary rounded-lg bg-card p-4 flex-1 shadow-sm">
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground block mb-2">
+                      Test Scenario
+                    </label>
+                    <Textarea
+                      value={editingState?.scenario || ""}
+                      onChange={(e) =>
+                        setEditingState((prev) => ({
+                          ...prev!,
+                          scenario: e.target.value,
+                        }))
+                      }
+                      placeholder="Describe the test scenario..."
+                      className="w-full resize-none text-sm h-16 p-3 rounded-lg"
                       />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground block mb-2">
+                      Expected Output
+                    </label>
+                    <Textarea
+                      value={editingState?.expectedOutput || ""}
+                      onChange={(e) =>
+                        setEditingState((prev) => ({
+                          ...prev!,
+                          expectedOutput: e.target.value,
+                        }))
+                      }
+                      placeholder="Describe what should happen..."
+                      className="w-full resize-none text-sm h-16 p-3 rounded-lg"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-3 text-sm rounded-lg"
+                      onClick={() => {
+                        setEditingId(null);
+                        setEditingState(null);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button size="sm" onClick={saveEdit} className="h-8 px-4 text-sm rounded-lg">
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : enhanced ? (
+              <div className="border rounded-lg hover:shadow-md transition-all bg-card flex-1 shadow-sm">
+                <div className="p-4 flex items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="font-medium text-sm line-clamp-1">
+                        {testCase.scenario || "Untitled scenario"}
+                      </span>
+                      {testCase.enabled !== false && (
+                        <CheckCircle className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+                      )}
                     </div>
-                    <div className="flex justify-end gap-2 mb-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="border border-zinc-800"
-                        onClick={() => {
-                          setEditingId(null);
-                          setEditingState(null);
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button size="sm" onClick={saveEdit}>
-                        Save
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : (
+                    <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                      {testCase.expectedOutput || "No expected output defined"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={testCase.enabled !== false}
+                      onCheckedChange={(checked) => {
+                        if (selectedTestId) {
+                          toggleScenarioEnabled(selectedTestId, testCase.id, checked);
+                        }
+                      }}
+                    />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="rounded-lg">
+                        <DropdownMenuItem onClick={() => startEditing(testCase)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => deleteTestCases([testCase.id])}
+                          className="text-destructive"
+                        >
+                          <Trash className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              </div>
+            ) : (
                 <Card className="bg-card text-card-foreground border border-border rounded-md shadow-sm w-full">
                   <CardContent className="pt-4">
                     <div className="flex justify-between items-start">
@@ -441,19 +523,30 @@ export function TestCaseVariations({
                   </CardContent>
                 </Card>
               )}
-            </div>
           </div>
         ))}
 
         {!selectedTestId && (
-          <div className="text-center py-8 text-muted-foreground">
-            Select an agent case to generate variations.
+          <div className="flex flex-col items-center justify-center h-40 text-center">
+            <div className="rounded-full bg-muted p-2 mb-2">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <h3 className="font-medium text-sm mb-1">No agent selected</h3>
+            <p className="text-xs text-muted-foreground">
+              Select an agent to create test scenarios
+            </p>
           </div>
         )}
 
         {selectedTestId && generatedCases.length === 0 && !loading && !errorContext.isLoading && (
-          <div className="text-center py-8 text-muted-foreground">
-            No test cases yet. Generate or upload test cases to get started.
+          <div className="flex flex-col items-center justify-center h-40 text-center">
+            <div className="rounded-full bg-muted p-2 mb-3">
+              <Sparkles className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <h3 className="font-medium text-sm mb-1">Ready to create scenarios</h3>
+            <p className="text-xs text-muted-foreground">
+              Use the "Generate" button above to create test scenarios automatically
+            </p>
           </div>
         )}
       </CardContent>

@@ -1,12 +1,16 @@
+import { TestScenario } from './test';
+
 export interface TestSet {
   id: string;
   name: string;
   description: string;
   agentId: string;
   agentName: string;
+  agentDescription?: string;
+  scenarios: TestScenario[];
   evaluations: Evaluation[];
   createdAt: Date;
-  scenarios: Array<{ id: string; name: string }>;
+  updatedAt: Date;
 }
 
 export interface Evaluation {

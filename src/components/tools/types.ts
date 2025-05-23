@@ -1,7 +1,2 @@
-  export interface TestCase {
-    id: string;
-    sourceTestId: string;
-    scenario: string;
-    expectedOutput: string;
-    enabled?: boolean;
-  }
+// Use TestScenario from @/types/test which is more complete
+export type { TestScenario as TestCase } from "@/types/test";

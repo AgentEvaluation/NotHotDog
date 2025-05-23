@@ -37,7 +37,7 @@ export const POST = withApiHandler(async (request: Request) => {
   const configData = validation.data;
   
   // Set org_id and created_by from the authenticated user's profile
-  configData.org_id = userProfile.org_id;
+  configData.org_id = userProfile.org_id || undefined;
   configData.created_by = userProfile.id;
   
   const result = await dbService.saveAgentConfig(configData);
@@ -60,7 +60,7 @@ export const PUT = withApiHandler(async (request: Request) => {
   const configData = validation.data;
   
   // Ensure org_id matches the user's organization
-  configData.org_id = userProfile.org_id;
+  configData.org_id = userProfile.org_id || undefined;
   
   const result = await dbService.saveAgentConfig(configData);
   return result;

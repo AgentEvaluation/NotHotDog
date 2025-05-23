@@ -189,11 +189,12 @@ export default function RunsList({
           </div>
         </Card>
       ) : (
-        <Card className="overflow-hidden">
+        <div className="w-full overflow-x-auto">
+        <Card className="overflow-visible">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead className="w-[35%]">Test Run</TableHead>
+                <TableHead className="w-[30%] min-w-[200px]">Test Run</TableHead>
                 <TableHead>Date & Time</TableHead>
                 <TableHead className="text-center">Total Tests</TableHead>
                 <TableHead className="text-center">Passed</TableHead>
@@ -214,9 +215,9 @@ export default function RunsList({
                     className="cursor-pointer transition-colors hover:bg-muted/50"
                     onClick={() => onSelectRun(run)}
                   >
-                    <TableCell className="font-medium">
-                      <div>
-                        <div className="font-medium">{run.name}</div>
+                    <TableCell className="font-medium max-w-[300px]">
+                      <div className="space-y-1">
+                        <div className="font-medium truncate" title={run.name}>{run.name}</div>
                         <div className="text-xs text-muted-foreground">ID: {run.id.slice(0, 8)}...</div>
                       </div>
                     </TableCell>
@@ -275,6 +276,7 @@ export default function RunsList({
             </TableBody>
           </Table>
         </Card>
+        </div>
       )}
     </div>
   );

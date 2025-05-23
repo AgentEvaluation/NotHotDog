@@ -95,17 +95,17 @@ export default function RunDetail({
               return (
                 <div
                   key={chat.id}
-                  className="flex items-center justify-between p-4 cursor-pointer transition-colors hover:bg-muted/50"
+                  className="flex items-center justify-between gap-4 p-4 cursor-pointer transition-colors hover:bg-muted/50"
                   onClick={() => onSelectChat(chat)}
                 >
-                  <div className="flex items-start gap-4">
-                    <div className="mt-1">
+                  <div className="flex items-start gap-4 flex-1 min-w-0">
+                    <div className="mt-1 flex-shrink-0">
                       <MessageSquare className="w-5 h-5 text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-medium truncate">{chat.scenarioName ?? "Unknown Scenario"}</h4>
-                        {getStatusIcon()}
+                        <h4 className="font-medium truncate flex-1">{chat.scenarioName ?? "Unknown Scenario"}</h4>
+                        <div className="flex-shrink-0">{getStatusIcon()}</div>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                         <User className="w-3 h-3" />
@@ -125,7 +125,7 @@ export default function RunDetail({
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <Badge
                       variant={
                         chat.status === "passed"
@@ -134,11 +134,11 @@ export default function RunDetail({
                           ? "destructive"
                           : "secondary"
                       }
-                      className="capitalize"
+                      className="capitalize whitespace-nowrap"
                     >
                       {chat.status}
                     </Badge>
-                    <ArrowLeft className="w-4 h-4 text-muted-foreground rotate-180" />
+                    <ArrowLeft className="w-4 h-4 text-muted-foreground rotate-180 flex-shrink-0" />
                   </div>
                 </div>
               );

@@ -30,7 +30,7 @@ export default function RunsList({
   const { error, clearError } = useErrorContext();
 
   return (
-    <div className="p-10 space-y-6 max-w-6xl mx-auto">
+    <div className="max-w-8xl mx-auto space-y-4">
       {error && (
         <ErrorDisplay 
           error={error}
@@ -41,10 +41,10 @@ export default function RunsList({
         />
       )}
       
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center mb-3">
         <div>
-          <h2 className="text-2xl font-semibold">Test Runs</h2>
-          <p className="text-sm text-muted-foreground mt-1">History of all test executions</p>
+            <h2 className="text-xl font-semibold">Test Runs</h2>
+            <p className="text-xs text-muted-foreground">History of all test executions</p>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -86,7 +86,7 @@ export default function RunsList({
         {runs.map((run) => (
           <div
             key={run.id}
-            className="flex items-center justify-between p-4 bg-background border border-border rounded-xl cursor-pointer hover:bg-muted"
+            className="flex items-center justify-between p-3 bg-background border border-border rounded-xl cursor-pointer hover:bg-muted"
             onClick={() => onSelectRun(run)}
           >
             <div className="flex-1">

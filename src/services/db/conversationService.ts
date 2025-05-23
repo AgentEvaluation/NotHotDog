@@ -52,11 +52,6 @@ export class ConversationService {
         personaId: string;
         status: string;
     }) {
-        console.log("came here");
-        console.log(data.runId);
-        console.log(data.scenarioId);
-        console.log(data.personaId);
-        console.log(data.status);
         try {
             const conversation = await prisma.test_conversations.create({
                 data: {

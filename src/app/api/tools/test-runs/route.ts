@@ -145,7 +145,8 @@ export const POST = withApiHandler(async (request: Request) => {
           userApiKey: apiKey,
           extraParams,
           // Pass the conversation ID created above to ensure all messages use the same ID
-          conversationId: conversationId
+          conversationId: conversationId,
+          agentDescription: testConfig.agentDescription
         });
 
         const result = await agent.runTest(
@@ -200,10 +201,12 @@ export const POST = withApiHandler(async (request: Request) => {
           validationResult: conversationValidation
         };
         
-        // Update the test conversation's status to 'passed' or 'failed'
+        // Update the test conversation's status to 'passed' or 'failed' with validation data
         await dbService.updateTestConversationStatus(
           conversationId, 
-          conversationValidation.isCorrect ? 'passed' : 'failed'
+          conversationValidation.isCorrect ? 'passed' : 'failed',
+          undefined, // no error message for successful runs
+          conversationValidation // pass the validation result to be saved
         );
 
         completedChats.push(chat);

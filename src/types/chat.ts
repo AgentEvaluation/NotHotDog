@@ -1,4 +1,3 @@
-import { TokenUsage } from "./metrics";
 import { TestMessage } from "./runs";
 
 export type MessageRole = 'user' | 'assistant';
@@ -41,7 +40,6 @@ export interface Conversation {
       score: number;
       reason: string;
     }>;
-    tokenUsage?: TokenUsage;  // Add this line
     isHallucination?: boolean; 
   };
   error?: string | null;

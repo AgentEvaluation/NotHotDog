@@ -81,14 +81,14 @@ export class ConversationProcessor {
           chatId: chatId,
           role: 'user',
           content: message,
-          metrics: { responseTime: 0, validationScore: 1 }
+          metrics: { responseTime: 0 }
         },
         {
           id: assistantMsgId,
           chatId: chatId,
           role: 'assistant',
           content: chatResponse,
-          metrics: { responseTime, validationScore: 1 }
+          metrics: { responseTime }
         }
       ];
       
@@ -99,7 +99,7 @@ export class ConversationProcessor {
         role: 'user',
         content: message,
         timestamp: new Date().toISOString(),
-        metrics: { responseTime: 0, validationScore: 1 }
+        metrics: { responseTime: 0 }
       });
       
       await dbService.saveConversationMessage({
@@ -108,7 +108,7 @@ export class ConversationProcessor {
         role: 'assistant',
         content: chatResponse,
         timestamp: new Date().toISOString(),
-        metrics: { responseTime, validationScore: 1 }
+        metrics: { responseTime }
       });
       
       return { response: chatResponse, responseTime, messages };

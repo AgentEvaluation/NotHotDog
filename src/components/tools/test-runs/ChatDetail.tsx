@@ -5,6 +5,7 @@ import ConversationView from "./ConversationView";
 import MetricsView from "./MetricsView";
 import { Conversation } from "@/types/chat";
 import { MetricsPanel } from "../metrics/MetricsPanel";
+import { AlertTriangle, Clock, Zap } from "lucide-react";
 
 interface ChatDetailProps {
   chat: Conversation;
@@ -12,68 +13,64 @@ interface ChatDetailProps {
 }
 
 export default function ChatDetail({ chat, onBack }: ChatDetailProps) {
-  const [activeTab, setActiveTab] = useState("conversation");
-  const [metricFilter, setMetricFilter] = useState<"All"|"Binary"|"Numerical"|"Critical Only">("All");
-
-  return (
-    <div className="p-5 space-y-3 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={onBack}>
-          ← Back to Run
-        </Button>
-      </div>
-
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Test Results</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            View evaluation results and metrics for your agent tests
-          </p>
+    const [activeTab, setActiveTab] = useState("conversation");
+    const [metricFilter, setMetricFilter] = useState<"All"|"Binary"|"Numerical"|"Critical Only">("All");
+  
+    return (
+      <div className="w-full">
+        <div className="-mt-1 mb-2">
+          <Button variant="ghost" size="sm" onClick={onBack}>
+            ← Back to Run
+          </Button>
         </div>
-
+  
+        {/* Dashboard metrics cards */}
+        <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="bg-background rounded-md border p-3 flex justify-between items-center">
+                <div>
+                <p className="text-xs text-muted-foreground">Response Time</p>
+                <p className="text-lg font-semibold">
+                    {chat.metrics.responseTime.length > 0 
+                        ? Math.round(chat.metrics.responseTime.reduce((sum, time) => sum + time, 0) / 
+                                    chat.metrics.responseTime.length)
+                        : 0}ms
+                    </p>
+                </div>
+                <Clock className="h-5 w-5 text-primary opacity-70" />
+            </div>
+            <div className="bg-background rounded-md border p-3 flex justify-between items-center">
+                <div>
+                    <p className="text-xs text-muted-foreground">Hallucination</p>
+                    <p className="text-lg font-semibold">
+                        {chat.messages.some(msg => msg.role === 'assistant' && msg.metrics?.isHallucination === true) ? 
+                            <span className="text-red-500">Yes</span> : 
+                            chat.messages.some(msg => msg.role === 'assistant' && msg.metrics?.isHallucination === false) ?
+                            <span className="text-green-500">No</span> :
+                            <span className="text-muted-foreground">N/A</span>}
+                    </p>
+                </div>
+            <AlertTriangle className="h-5 w-5 text-primary opacity-70" />
+            </div>
+        </div>
+  
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="bg-background p-1 border rounded-md shadow-sm">
-                <TabsTrigger
-                value="conversation"
-                className="px-4 py-1.5 text-sm rounded-md data-[state=active]:bg-muted data-[state=active]:text-foreground"
-                >
-                Conversation
-                </TabsTrigger>
-                <TabsTrigger
-                value="metrics"
-                className="px-4 py-1.5 text-sm rounded-md data-[state=active]:bg-muted data-[state=active]:text-foreground"
-                >
-                Metrics Breakdown
-                </TabsTrigger>
-                <TabsTrigger
-                value="advanced"
-                className="px-4 py-1.5 text-sm rounded-md data-[state=active]:bg-muted data-[state=active]:text-foreground"
-                >
-                Advanced Metrics
-                </TabsTrigger>
+            <TabsList className="bg-background border rounded-md shadow-sm mb-2">
+                <TabsTrigger value="conversation">Conversation</TabsTrigger>
+                <TabsTrigger value="metrics">Metrics Breakdown</TabsTrigger>
             </TabsList>
-
-            <TabsContent value="conversation" className="pt-4">
+  
+            <TabsContent value="conversation" className="pt-2">
                 <ConversationView chat={chat} />
             </TabsContent>
-
-            <TabsContent value="metrics" className="pt-4">
+  
+            <TabsContent value="metrics" className="pt-2">
                 <MetricsView 
-                metricResults={chat.metrics.metricResults || []} 
-                metricFilter={metricFilter}
-                setMetricFilter={setMetricFilter}
-                />
-            </TabsContent>
-
-            <TabsContent value="advanced" className="pt-4">
-                <MetricsPanel 
-                responseTime={chat.metrics.responseTime || []} 
-                tokenUsage={chat.metrics.tokenUsage}
-                isHallucination={chat.metrics.isHallucination}
+                  metricResults={chat.metrics.metricResults || []} 
+                  metricFilter={metricFilter}
+                  setMetricFilter={setMetricFilter}
                 />
             </TabsContent>
         </Tabs>
       </div>
-    </div>
-  );
-}
+    );
+  }

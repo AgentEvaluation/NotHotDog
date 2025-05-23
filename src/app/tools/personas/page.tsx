@@ -17,6 +17,7 @@ import ErrorDisplay from "@/components/common/ErrorDisplay"
 export default function PersonasScreen() {
   const [personas, setPersonas] = useState<Persona[]>([])
   const [loading, setLoading] = useState(false)
+  const [savingPersonaId, setSavingPersonaId] = useState<string | null>(null)
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false)
   const errorContext = useErrorContext()
 
@@ -64,10 +65,33 @@ export default function PersonasScreen() {
     setEditingPersona({ ...persona })
   }
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (editingPersona) {
-      setPersonas(personas.map((p) => (p.id === editingPersona.id ? editingPersona : p)))
-      setEditingPersona(null)
+      setSavingPersonaId(editingPersona.id);
+      await errorContext.withErrorHandling(async () => {
+        const headers = getModelConfigHeaders();
+        if (!headers) {
+          errorContext.handleError(new Error("LLM model configuration required to update personas"));
+          setIsApiKeyModalOpen(true);
+          return;
+        }
+
+        const response = await fetch(`/api/tools/personas/${editingPersona.id}`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify(editingPersona)
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to update persona');
+        }
+        
+        const updatedPersona = await response.json();
+        setPersonas(personas.map((p) => (p.id === editingPersona.id ? updatedPersona.data : p)));
+        setEditingPersona(null);
+      });
+      setSavingPersonaId(null);
     }
   }
 
@@ -203,6 +227,7 @@ export default function PersonasScreen() {
                 onSave={handleSaveEdit}
                 onCancel={handleCancelEdit}
                 onDelete={handleDeletePersona}
+                isSaving={savingPersonaId === persona.id}
               />
             ))}
           </div>

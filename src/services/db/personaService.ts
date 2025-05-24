@@ -1,168 +1,90 @@
 import { prisma } from '@/lib/prisma';
-import { CommunicationStyle, DecisionSpeed, EmotionalState, ErrorTolerance, MessageLength, Persona, PrimaryIntent, SlangUsage, TechSavviness } from '@/types';
+import { Persona } from '@/types';
+
+// Hardcoded personas for community edition
+// Using fixed UUIDs for consistency
+const COMMUNITY_PERSONAS: Persona[] = [
+  {
+    id: '11111111-1111-1111-1111-111111111111',
+    name: 'Friendly User',
+    description: 'A typical friendly user asking questions politely',
+    systemPrompt: 'You are a friendly user asking questions in a polite and clear manner.',
+    temperature: 0.7,
+    messageLength: 'MEDIUM',
+    primaryIntent: 'INFORMATION_SEEKING',
+    communicationStyle: 'FRIENDLY',
+    techSavviness: 'MODERATE',
+    emotionalState: 'POSITIVE',
+    errorTolerance: 'HIGH',
+    decisionSpeed: 'MODERATE',
+    slangUsage: 'MINIMAL',
+    isDefault: true,
+    created_at: new Date(),
+    updated_at: new Date(),
+    org_id: ''
+  },
+  {
+    id: '22222222-2222-2222-2222-222222222222',
+    name: 'Technical Expert',
+    description: 'A technically savvy user with detailed questions',
+    systemPrompt: 'You are a technical expert asking detailed and specific questions using proper technical terminology.',
+    temperature: 0.5,
+    messageLength: 'LONG',
+    primaryIntent: 'TECHNICAL_SUPPORT',
+    communicationStyle: 'FORMAL',
+    techSavviness: 'EXPERT',
+    emotionalState: 'NEUTRAL',
+    errorTolerance: 'LOW',
+    decisionSpeed: 'FAST',
+    slangUsage: 'NONE',
+    isDefault: true,
+    created_at: new Date(),
+    updated_at: new Date(),
+    org_id: ''
+  },
+  {
+    id: '33333333-3333-3333-3333-333333333333',
+    name: 'Confused User',
+    description: 'A user who needs extra help and clarification',
+    systemPrompt: 'You are a confused user who needs things explained simply and may ask follow-up questions for clarification.',
+    temperature: 0.8,
+    messageLength: 'SHORT',
+    primaryIntent: 'HELP_SUPPORT',
+    communicationStyle: 'CASUAL',
+    techSavviness: 'BEGINNER',
+    emotionalState: 'CONFUSED',
+    errorTolerance: 'VERY_HIGH',
+    decisionSpeed: 'SLOW',
+    slangUsage: 'MODERATE',
+    isDefault: true,
+    created_at: new Date(),
+    updated_at: new Date(),
+    org_id: ''
+  }
+];
 
 export class PersonaService {
-  async getPersonas(userId: string): Promise<any[]> {
-    try {
-      const profile = await prisma.profiles.findUnique({
-        where: { clerk_id: userId }
-      });
-      
-      if (!profile || !profile.org_id) {
-        return [];
-      }
-      const personas = await prisma.personas.findMany({
-        where: {
-          OR: [
-            { org_id: profile.org_id },
-            { is_default: true }
-          ]
-        }
-      });
-      return personas;
-    } catch (error) {
-      console.error("Database error in getPersonas:", error);
-      return [];
-    }
+  async getPersonas(): Promise<Persona[]> {
+    // Return hardcoded personas for community edition
+    return COMMUNITY_PERSONAS;
   }
 
-  async getPersonaById(personaId: string) {
-    try {
-      const persona = await prisma.personas.findUnique({
-        where: { id: personaId }
-      });
-      return persona;
-    } catch (error) {
-      console.error("Database error in getPersonaById:", error);
-      throw new Error("Failed to fetch persona");
-    }
+  async getPersonaById(personaId: string): Promise<Persona | null> {
+    const persona = COMMUNITY_PERSONAS.find(p => p.id === personaId);
+    return persona || null;
   }
 
-  async createPersona(data: {
-    org_id: string;
-    name: string;
-    description?: string;
-    systemPrompt?: string;
-    temperature: number;
-    messageLength: MessageLength;
-    primaryIntent: PrimaryIntent;
-    communicationStyle: CommunicationStyle;
-    techSavviness: TechSavviness;
-    emotionalState: EmotionalState;
-    errorTolerance: ErrorTolerance;
-    decisionSpeed: DecisionSpeed;
-    slangUsage: SlangUsage;
-    isDefault?: boolean;
-  }) {
-    try {
-      const newPersona = await prisma.personas.create({
-        data: {
-          org_id: data.org_id,
-          name: data.name,
-          description: data.description || "",
-          system_prompt: data.systemPrompt || "",
-          is_default: data.isDefault || false,
-          temperature: data.temperature,
-          message_length: data.messageLength,
-          primary_intent: data.primaryIntent,
-          communication_style: data.communicationStyle,
-          tech_savviness: data.techSavviness,
-          emotional_state: data.emotionalState,
-          error_tolerance: data.errorTolerance,
-          decision_speed: data.decisionSpeed,
-          slang_usage: data.slangUsage
-        }
-      });
-      
-      return this.mapDbPersonaToPersona(newPersona);
-    } catch (error) {
-      console.error("Database error in createPersona:", error);
-      throw new Error("Failed to create persona");
-    }
-  }
-  
-  async updatePersona(id: string, data: {
-    name: string;
-    description?: string;
-    systemPrompt?: string;
-    temperature: number;
-    messageLength: MessageLength;
-    primaryIntent: PrimaryIntent;
-    communicationStyle: CommunicationStyle;
-    techSavviness: TechSavviness;
-    emotionalState: EmotionalState;
-    errorTolerance: ErrorTolerance;
-    decisionSpeed: DecisionSpeed;
-    slangUsage: SlangUsage;
-    isDefault?: boolean;
-  }) {
-    try {
-      const updatedPersona = await prisma.personas.update({
-        where: { id },
-        data: {
-          name: data.name,
-          description: data.description,
-          system_prompt: data.systemPrompt || "",
-          is_default: data.isDefault || false,
-          temperature: data.temperature,
-          message_length: data.messageLength,
-          primary_intent: data.primaryIntent,
-          communication_style: data.communicationStyle,
-          tech_savviness: data.techSavviness,
-          emotional_state: data.emotionalState,
-          error_tolerance: data.errorTolerance,
-          decision_speed: data.decisionSpeed,
-          slang_usage: data.slangUsage,
-          updated_at: new Date()
-        }
-      });
-      
-      return this.mapDbPersonaToPersona(updatedPersona);
-    } catch (error) {
-      console.error("Database error in updatePersona:", error);
-      throw new Error("Failed to update persona");
-    }
-  }
-  
-  async deletePersona(id: string) {
-    try {
-      await prisma.agent_persona_mappings.deleteMany({
-        where: { persona_id: id }
-      });
-      
-      await prisma.personas.delete({
-        where: { id }
-      });
-      
-      return { success: true };
-    } catch (error) {
-      console.error("Database error in deletePersona:", error);
-      throw new Error("Failed to delete persona");
-    }
-  }
-  
-  private mapDbPersonaToPersona(dbPersona: any): Persona {
-    return {
-      id: dbPersona.id,
-      name: dbPersona.name,
-      description: dbPersona.description || "",
-      systemPrompt: dbPersona.system_prompt || "",
-      isDefault: dbPersona.is_default,
-      temperature: dbPersona.temperature,
-      messageLength: dbPersona.message_length as MessageLength,
-      primaryIntent: dbPersona.primary_intent as PrimaryIntent,
-      communicationStyle: dbPersona.communication_style as CommunicationStyle,
-      techSavviness: dbPersona.tech_savviness as TechSavviness,
-      emotionalState: dbPersona.emotional_state as EmotionalState,
-      errorTolerance: dbPersona.error_tolerance as ErrorTolerance,
-      decisionSpeed: dbPersona.decision_speed as DecisionSpeed,
-      slangUsage: dbPersona.slang_usage as SlangUsage,
-      historyBasedMemory: false,
-      createdAt: dbPersona.created_at,
-      updatedAt: dbPersona.updated_at
-    };
+  async createPersona(data: any) {
+    throw new Error('Custom personas are not available in the community edition');
   }
 
+  async updatePersona(personaId: string, data: any) {
+    throw new Error('Custom personas are not available in the community edition');
+  }
+
+  async deletePersona(personaId: string) {
+    throw new Error('Custom personas are not available in the community edition');
+  }
 }
 
 export const personaService = new PersonaService();

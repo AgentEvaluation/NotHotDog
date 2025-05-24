@@ -20,14 +20,20 @@ export function useTestExecution() {
   const [savedAgentConfigs, setSavedAgentConfigs] = useState<Array<{ id: string, name: string }>>([]);
 
   useEffect(() => {
-    errorContext.withErrorHandling(async () => {
-      const data = await ApiClient.get('/api/tools/agent-config');
-      setSavedAgentConfigs(data.map((cfg: any) => ({
-        id: cfg.id,
-        name: cfg.name
-      })));
-    });
-  }, [errorContext]);
+    const loadConfigs = async () => {
+      try {
+        const data = await ApiClient.get('/api/tools/agent-config');
+        setSavedAgentConfigs(data.map((cfg: any) => ({
+          id: cfg.id,
+          name: cfg.name
+        })));
+      } catch (error) {
+        console.error('Failed to load agent configs:', error);
+      }
+    };
+    
+    loadConfigs();
+  }, []); // Empty dependency array - only run once on mount
 
   /**
    * Executes a test for the given test ID

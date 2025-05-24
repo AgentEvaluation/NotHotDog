@@ -2,7 +2,6 @@
 
 import { Rule } from "@/services/agents/claude/types";
 import { useState, useEffect, useRef } from "react";
-import { useUser } from '@clerk/nextjs';
 import { useErrorContext } from '@/hooks/useErrorContext';
 
 interface Header {
@@ -32,14 +31,10 @@ export function useAgentConfig() {
   const [userDescription, setUserDescription] = useState("");
   const [isEditMode, setIsEditMode] = useState(false);
   const [currentAgentId, setCurrentAgentId] = useState<string | null>(null);
-  const { isSignedIn, user } = useUser();
-  const [orgId, setOrgId] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
   const errorContext = useErrorContext();
   
   // Add refs to track if initial fetches are complete
   const initialAgentFetchComplete = useRef(false);
-  const initialOrgDetailsFetchComplete = useRef(false);
 
   // Only fetch agents on initial mount
   useEffect(() => {
@@ -65,28 +60,6 @@ export function useAgentConfig() {
       });
     }
   }, [errorContext]);
-
-  // Fix for the user details fetch
-  useEffect(() => {
-    if (isSignedIn && user && user.id && !initialOrgDetailsFetchComplete.current) {
-      errorContext.withErrorHandling(async () => {
-        const res = await fetch(`/api/auth/user-details?clerkId=${user.id}`);
-        if (!res.ok) {
-          throw new Error(`API error: ${res.status}`);
-        }
-        
-        const result = await res.json();
-        const data = result.data;
-        
-        if (data && data.organization) {
-          setOrgId(data.organization.id);
-          setUserId(data.profile?.id || null);
-        }
-        
-        initialOrgDetailsFetchComplete.current = true;
-      }, false);
-    }
-  }, [isSignedIn, user, errorContext]);
   
   const loadAgent = async (agentId: string) => {
     return await errorContext.withErrorHandling(async () => {
@@ -168,9 +141,7 @@ export function useAgentConfig() {
         responseTime,
         agentDescription,
         userDescription,
-        timestamp: new Date().toISOString(),
-        org_id: orgId,
-        created_by: userId
+        timestamp: new Date().toISOString()
       };
     
       const res = await fetch("/api/tools/agent-config", {

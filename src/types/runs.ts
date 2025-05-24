@@ -24,7 +24,7 @@ export interface TestRun {
   chats: Conversation[];
   results: Array<{ scenarioId: string; responseTime: number }>;
   agentId: string;
-  createdBy: string;
+  createdBy?: string;
 }
 
 export type TestRunStatus = 'pending' | 'running' | 'completed' | 'failed';

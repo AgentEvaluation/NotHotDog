@@ -16,7 +16,13 @@ export class ConversationService {
           
           // Log for debugging
           console.log(`Saving ${message.role} message to database: ${message.id.substring(0, 8)}...`);
-          console.log(message);
+          console.log('Full message data:', {
+            id: message.id,
+            conversationId: message.conversationId,
+            role: message.role,
+            contentLength: message.content?.length,
+            timestamp: message.timestamp
+          });
           
           return await prisma.conversation_messages.create({
             data: {
@@ -26,7 +32,6 @@ export class ConversationService {
               content: message.content,
               created_at: new Date(message.timestamp),
               // Default values for nullable fields
-              is_correct: message.role === 'assistant' ? null : true,
               response_time: message.role === 'assistant' ? (message.metrics?.responseTime || null) : null,
               validation_score: message.role === 'assistant' ? (message.metrics?.validationScore || null) : null,
               metrics: formattedMetrics

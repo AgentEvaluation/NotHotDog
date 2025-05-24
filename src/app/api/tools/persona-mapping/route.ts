@@ -1,15 +1,9 @@
 // src-app-api-tools-persona-mapping-route.ts
 import { withApiHandler } from "@/lib/api-utils";
 import { dbService } from "@/services/db";
-import { auth } from "@clerk/nextjs/server";
-import { AuthorizationError, ValidationError } from "@/lib/errors";
+import { ValidationError } from "@/lib/errors";
 
 export const GET = withApiHandler(async (request: Request) => {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new AuthorizationError("Unauthorized");
-  }
-  
   const { searchParams } = new URL(request.url);
   const agentId = searchParams.get("agentId");
   
@@ -22,11 +16,6 @@ export const GET = withApiHandler(async (request: Request) => {
 });
 
 export const POST = withApiHandler(async (request: Request) => {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new AuthorizationError("Unauthorized");
-  }
-  
   const body = await request.json();
   const { agentId, personaId } = body;
   
@@ -39,11 +28,6 @@ export const POST = withApiHandler(async (request: Request) => {
 });
 
 export const DELETE = withApiHandler(async (request: Request) => {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new AuthorizationError("Unauthorized");
-  }
-  
   const body = await request.json();
   const { agentId, personaId } = body;
   

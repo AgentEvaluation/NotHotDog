@@ -1,9 +1,6 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
-import { ClerkProvider, SignInButton, SignedIn, SignedOut } from '@clerk/nextjs'
 import { ThemeProvider } from './providers'
-import CustomUserDropdown from "@/components/navigation/CustomUserDropdown";
-import SignupHandler from '@/components/authentication/SignupHandler';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { ErrorProvider } from '@/hooks/useErrorContext';
 import { Toaster } from '@/components/ui/toaster';
@@ -16,8 +13,6 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-   <ClerkProvider>
-    <SignupHandler />
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} min-h-screen antialiased`}>
           <ThemeProvider
@@ -32,18 +27,8 @@ export default function RootLayout({
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl font-bold text-orange-500">NotHotDog</h1>
                   <span className="text-xs text-muted-foreground uppercase tracking-wider border-l border-muted pl-2">
-                    Agent Testing Framework
+                    Agent Testing Framework - Community Edition
                   </span>
-                </div>
-
-                {/* User Avatar with Custom Dropdown */}
-                <div className="flex items-center">
-                  <SignedOut>
-                    <SignInButton />
-                  </SignedOut>
-                  <SignedIn>
-                    <CustomUserDropdown />
-                  </SignedIn>
                 </div>
               </header>
                 
@@ -56,6 +41,5 @@ export default function RootLayout({
           </ThemeProvider>
       </body>
     </html>
-  </ClerkProvider>
   );
 }

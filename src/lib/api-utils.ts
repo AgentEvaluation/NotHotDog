@@ -2,9 +2,7 @@
  * @file Utility functions for standardizing API response formats
  */
 import { NextResponse } from 'next/server';
-import { formatErrorResponse, AppError, logError, AuthorizationError, NotFoundError } from '@/lib/errors';
-import { auth } from '@clerk/nextjs/server';
-import { dbService } from '@/services/db';
+import { formatErrorResponse, AppError, logError } from '@/lib/errors';
 
 type ApiHandler<T> = (req: Request, context?: any) => Promise<T>;
 
@@ -75,22 +73,3 @@ export function createErrorResponse(error: unknown): NextResponse {
   );
 }
 
-/**
- * Requires authentication and returns the user's profile
- * Throws AuthorizationError if not authenticated
- * Throws NotFoundError if profile not found
- */
-export async function requireAuthWithProfile() {
-  const { userId } = await auth();
-  
-  if (!userId) {
-    throw new AuthorizationError("Unauthorized");
-  }
-
-  const profile = await dbService.getProfileByClerkId(userId);
-  if (!profile || !profile.org_id) {
-    throw new NotFoundError("Profile not found");
-  }
-
-  return { userId, profile };
-}

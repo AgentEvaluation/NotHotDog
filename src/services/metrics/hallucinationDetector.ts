@@ -10,11 +10,11 @@ interface HallucinationResult {
   reasoning: string;
 }
 
-const HALLUCINATION_PROMPT = `Analyze the following assistant response for potential hallucinations or inaccuracies.
+const HALLUCINATION_PROMPT = `You are a hallucination detector. Analyze the following assistant response for potential hallucinations.
 
 AGENT DESCRIPTION: {agentDescription}
 CONVERSATION HISTORY: {context}
-CURRENT QUERY: {query}
+USER QUERY: {query}
 ASSISTANT RESPONSE: {response}
 
 A hallucination occurs when the AI:
@@ -33,18 +33,16 @@ CRITICAL: When users ask general questions without specifics, the assistant shou
 - NOT assume or fabricate specific examples, instances, or details
 Any unrequested specific information IS a hallucination, regardless of domain.
 
-Consider the agent's described purpose and capabilities when evaluating. The agent should:
-- Stay on topic and relevant to the conversation
-- Only claim capabilities mentioned in its description
-- Provide reasonable responses within its stated domain
+Respond in this exact JSON format:
+{{
+  "isHallucination": boolean,
+  "reasoning": "Brief explanation of your analysis"
+}}
 
-Return ONLY a JSON object with:
-- isHallucination: boolean (true if there's hallucination, false if not)
-- reasoning: brief explanation of your analysis`;
+Only output the JSON, nothing else.`;
 
 export class HallucinationDetector {
   private model;
-  private chain: RunnableSequence;
   private agentDescription: string;
   
   constructor(modelConfig: LLMServiceConfig, agentDescription: string) {
@@ -54,22 +52,25 @@ export class HallucinationDetector {
       modelConfig.apiKey,
       modelConfig.extraParams
     );
-    
-    // Initialize the chain in constructor
-    this.chain = RunnableSequence.from([
-      ChatPromptTemplate.fromTemplate(HALLUCINATION_PROMPT),
-      this.model,
-      new JsonOutputParser<HallucinationResult>()
-    ]);
   }
   
   async detectHallucination(
     context: string, 
     query: string, 
     response: string
-  ): Promise<boolean> {
+  ): Promise<boolean | null> {
     try {
-      const result = await this.chain.invoke({
+      const prompt = ChatPromptTemplate.fromMessages([
+        ["user", HALLUCINATION_PROMPT]
+      ]);
+      
+      const chain = RunnableSequence.from([
+        prompt,
+        this.model,
+        new JsonOutputParser<HallucinationResult>()
+      ]);
+      
+      const result = await chain.invoke({
         agentDescription: this.agentDescription,
         context: context,
         query,
@@ -84,20 +85,37 @@ export class HallucinationDetector {
     } catch (error) {
       console.error("Error detecting hallucination:", error);
       
-      // Try to extract JSON from error message if it's a parsing issue
-      if (error instanceof Error && error.message.includes('JSON')) {
-        try {
-          const jsonMatch = error.message.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            const parsed = JSON.parse(jsonMatch[0]);
-            return parsed.isHallucination || false;
-          }
-        } catch (parseError) {
-          console.error("Failed to parse JSON from error:", parseError instanceof Error ? parseError.message : String(parseError));
+      // If JsonOutputParser fails, try manual parsing
+      try {
+        const prompt = ChatPromptTemplate.fromMessages([
+          ["user", HALLUCINATION_PROMPT]
+        ]);
+        
+        const chain = RunnableSequence.from([
+          prompt,
+          this.model
+        ]);
+        
+        const rawResult = await chain.invoke({
+          agentDescription: this.agentDescription,
+          context: context,
+          query,
+          response
+        });
+        
+        const responseText = typeof rawResult === 'string' ? rawResult : rawResult.content;
+        const jsonMatch = responseText.match(/\{[\s\S]*?\}/);
+        
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]) as HallucinationResult;
+          console.log("Successfully parsed hallucination result from raw response");
+          return parsed.isHallucination;
         }
+      } catch (fallbackError) {
+        console.error("Fallback parsing also failed:", fallbackError);
       }
       
-      return false; // Default to false on error
+      return null;
     }
   }
 }

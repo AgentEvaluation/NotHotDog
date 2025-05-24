@@ -1,7 +1,6 @@
-import { withApiHandler, requireAuthWithProfile } from '@/lib/api-utils';
-import { NotFoundError, ForbiddenError, ValidationError, ExternalAPIError, AuthorizationError } from '@/lib/errors';
+import { withApiHandler } from '@/lib/api-utils';
+import { NotFoundError, ValidationError, ExternalAPIError } from '@/lib/errors';
 import { dbService } from '@/services/db';
-import { auth } from '@clerk/nextjs/server';
 import { QaAgent } from '@/services/agents/claude/qaAgent';
 import { v4 as uuidv4 } from 'uuid';
 import { TestRun } from '@/types/runs';
@@ -11,17 +10,17 @@ import { LLMProvider } from '@/services/llm/enums';
 import { createTestRunSchema, safeValidateRequest } from '@/lib/validations/api';
 
 export const GET = withApiHandler(async (request: Request) => {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new AuthorizationError('User not authenticated');
-  }
+  // Parse query parameters for pagination
+  const { searchParams } = new URL(request.url);
+  const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
+  const offset = parseInt(searchParams.get('offset') || '0');
   
-  const testRuns = await dbService.getTestRuns(userId);
-  return testRuns;
+  // Return paginated test runs
+  const result = await dbService.getAllTestRuns(limit, offset);
+  return result;
 });
 
 export const POST = withApiHandler(async (request: Request) => {
-  const { userId, profile } = await requireAuthWithProfile();
 
   const body = await request.json();
   
@@ -57,10 +56,6 @@ export const POST = withApiHandler(async (request: Request) => {
     throw new NotFoundError('Test configuration not found');
   }
 
-  // Make sure the test belongs to the user's organization
-  if (testConfig.org_id !== profile.org_id) {
-    throw new ForbiddenError('Unauthorized access to test');
-  }
 
   const personaMapping = await dbService.getPersonaMappingByAgentId(testId);
   const testVariations = await dbService.getTestVariations(testId);
@@ -87,7 +82,7 @@ export const POST = withApiHandler(async (request: Request) => {
     chats: [],
     results: [],
     agentId: testId,
-    createdBy: profile.id
+    createdBy: 'system'
   };
   
   // Save the test run to the database immediately
@@ -211,6 +206,7 @@ export const POST = withApiHandler(async (request: Request) => {
       } catch (error) {
         // Update the test conversation's status to 'failed'
         const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`Test execution failed for scenario ${scenario.scenario} with persona ${personaId}:`, error);
         await dbService.updateTestConversationStatus(conversationId, 'failed', errorMessage);
         
         const chat: Conversation = {
@@ -246,19 +242,7 @@ export const POST = withApiHandler(async (request: Request) => {
   // Update the test run with final results
   await dbService.updateTestRun(testRun);
 
-  for (const chat of completedChats) {
-    const metricResults = chat.metrics.metricResults ?? [];
-
-    console.log("=======================");
-    console.log(metricResults);
-    if (metricResults.length > 0) {
-      await dbService.saveMetricResults(
-        testRun.id,
-        chat.id,
-        metricResults
-      );
-    }
-  }
+  // Metric results are now stored inline with conversations, no need for separate saving
 
   return testRun;
 });

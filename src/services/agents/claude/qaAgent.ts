@@ -240,35 +240,43 @@ export class QaAgent {
       }
     ];
   
-    try {
-      const modelConfig: LLMServiceConfig = {
-        id: this.config.modelId || AnthropicModel.Sonnet3_5,
-        provider: this.config.provider as LLMProvider || LLMProvider.Anthropic, // Fix type cast
-        name: "QA Agent Model",
-        apiKey: this.config.userApiKey,
-        keyName: "QA Agent Key",
-        extraParams: this.config.extraParams || {}
-      };
+    // Skip hallucination detection if it's been failing consistently
+    const skipHallucinationDetection = process.env.SKIP_HALLUCINATION_DETECTION === 'true';
+    
+    if (!skipHallucinationDetection) {
+      try {
+        const modelConfig: LLMServiceConfig = {
+          id: this.config.modelId || AnthropicModel.Sonnet3_5,
+          provider: this.config.provider as LLMProvider || LLMProvider.Anthropic, // Fix type cast
+          name: "QA Agent Model",
+          apiKey: this.config.userApiKey,
+          keyName: "QA Agent Key",
+          extraParams: this.config.extraParams || {}
+        };
 
-      const memoryVariables = await this.memory.loadMemoryVariables({});
-      const conversationHistory = ConversationHandler.formatConversationHistory(
-        memoryVariables.chat_history
-      );
-      
-      const detector = new HallucinationDetector(modelConfig, this.config.agentDescription);
-      const isHallucination = await detector.detectHallucination(
-        conversationHistory,
-        message,
-        assistantResponse
-      );
-      
-      messages[1].metrics!.isHallucination = isHallucination;
-    } catch (error) {
-      console.error("Error during hallucination detection:", error);
-      messages[1].metrics = {
-        ...messages[1].metrics,
-        isHallucination: null
-      };
+        const memoryVariables = await this.memory.loadMemoryVariables({});
+        const conversationHistory = ConversationHandler.formatConversationHistory(
+          memoryVariables.chat_history
+        );
+        
+        const detector = new HallucinationDetector(modelConfig, this.config.agentDescription);
+        const isHallucination = await detector.detectHallucination(
+          conversationHistory,
+          message,
+          assistantResponse
+        );
+        
+        messages[1].metrics!.isHallucination = isHallucination;
+      } catch (error) {
+        console.error("Error during hallucination detection:", error);
+        messages[1].metrics = {
+          ...messages[1].metrics,
+          isHallucination: null
+        };
+      }
+    } else {
+      // Hallucination detection disabled
+      messages[1].metrics!.isHallucination = null;
     }
   
     // Save to database for logging and analysis

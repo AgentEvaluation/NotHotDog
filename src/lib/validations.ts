@@ -1,8 +1,8 @@
 import { z } from 'zod'
 
 const TestCaseSchema = z.object({
-  input: z.any(),
-  expectedOutput: z.any(),
+  input: z.string(),
+  expectedOutput: z.string(),
   description: z.string(),
   category: z.string().optional()
 })

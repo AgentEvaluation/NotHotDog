@@ -13,22 +13,9 @@ export interface ExtendedTestConversation {
       conversation_id: string;
       role: string;
       content: string;
-      is_correct: boolean | null;
       response_time: number | null;
       validation_score: number | null;
       metrics: unknown;
     }[];
-    test_run_metrics?: {
-        id: string;
-        metric_id: string;
-        score: number;
-        reason: string | null;
-        metrics: {
-          id: string;
-          name: string;
-          type: string;
-          check_criteria: string;
-        }
-      }[];
   }
   

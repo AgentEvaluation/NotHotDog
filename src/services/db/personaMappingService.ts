@@ -15,6 +15,19 @@ export class PersonaMappingService {
   
   async createPersonaMapping(agentId: string, personaId: string): Promise<{ personaIds: string[] }> {
     try {
+      // Check if mapping already exists
+      const existingMapping = await prisma.agent_persona_mappings.findFirst({
+        where: {
+          agent_id: agentId,
+          persona_id: personaId
+        }
+      });
+      
+      if (existingMapping) {
+        // Already exists, just return current mappings
+        return this.getPersonaMappingByAgentId(agentId);
+      }
+      
       await prisma.agent_persona_mappings.create({
         data: {
           agent_id: agentId,
@@ -23,7 +36,11 @@ export class PersonaMappingService {
       });
       return this.getPersonaMappingByAgentId(agentId);
     } catch (error) {
-      console.error("Database error in createPersonaMapping:", error);
+      console.error("Database error in createPersonaMapping:", {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        agentId,
+        personaId
+      });
       throw new Error("Failed to create persona mapping");
     }
   }

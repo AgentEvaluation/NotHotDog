@@ -3,7 +3,7 @@
 <div align="center">
   <br />
   <h1>🤖 NotHotDog</h1>
-  <h3>Enterprise-Grade AI Agent Testing & Evaluation Platform</h3>
+  <h3>AI Agent Testing & Evaluation Platform</h3>
   <br />
   <p align="center">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT">
@@ -11,13 +11,14 @@
     <img src="https://img.shields.io/badge/Next.js-15-black?logo=next.js&logoColor=white" alt="Next.js">
     <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white" alt="React">
     <img src="https://img.shields.io/badge/PostgreSQL-15-336791?logo=postgresql&logoColor=white" alt="PostgreSQL">
+    <img src="https://img.shields.io/github/stars/AgentEvaluation/NotHotDog?style=social" alt="GitHub stars">
   </p>
   <p align="center">
     <a href="#-overview">Overview</a> •
-    <a href="#-key-features">Features</a> •
+    <a href="#-editions">Editions</a> •
+    <a href="#-features">Features</a> •
     <a href="#-quick-start">Quick Start</a> •
     <a href="#-architecture">Architecture</a> •
-    <a href="#-api-reference">API</a> •
     <a href="#-contributing">Contributing</a>
   </p>
 </div>
@@ -26,43 +27,58 @@
 
 ## 📋 Overview
 
-NotHotDog is a comprehensive platform designed for testing, evaluating, and simulating AI agents at scale. Built for engineering teams who need robust quality assurance for their conversational AI systems, NotHotDog provides automated testing, persona-based evaluation, and detailed performance analytics.
+NotHotDog is an open-source platform for testing and evaluating AI agents. Built for developers who need quality assurance for their conversational AI systems, NotHotDog provides automated testing, hallucination detection, and performance monitoring.
 
-### 🎯 Why NotHotDog?
+## 🎁 Editions
 
-Building reliable AI agents requires rigorous testing across diverse scenarios and user personas. NotHotDog addresses this challenge by providing:
+### 🆓 Community Edition (This Repo)
+Perfect for individuals and small teams getting started with AI agent testing.
 
-- **Automated Test Generation**: Create hundreds of test variations from simple examples
-- **Persona-Based Testing**: Simulate interactions with different user personalities
-- **Real-Time Validation**: Ensure responses meet quality and format requirements
-- **Performance Analytics**: Track metrics across response time, accuracy, and conversation quality
-- **Multi-Provider Support**: Test across Anthropic, OpenAI, DeepSeek, and Gemini
+**Includes:**
+- ✅ Core agent testing framework
+- ✅ Test case generation & execution
+- ✅ **Hallucination detection** 
+- ✅ Response time metrics
+- ✅ Validation rules
+- ✅ 3 pre-configured personas
+- ✅ CSV/Excel test upload
+- ✅ Basic performance metrics
 
-## ✨ Key Features
+### 🚀 Enterprise Edition
+For teams needing advanced features, collaboration, and scale.
+
+**Everything in Community, plus:**
+- 🏢 Multi-tenant organizations
+- 👥 Team collaboration & RBAC
+- 🎭 Custom persona creation
+- 📊 Custom metrics & KPIs  
+- 📈 Advanced analytics dashboard
+- 🔐 SSO & enterprise security
+- 🎯 Priority support & SLAs
+- 🔄 CI/CD integrations
+
+[**Get Enterprise Access →**](mailto:enterprise@nothotdog.ai)
+
+## ✨ Key Features (Community Edition)
 
 ### 🧪 Automated Test Generation
-Generate comprehensive test suites automatically using AI-powered test case creation. Define a simple example, and NotHotDog creates diverse variations covering edge cases, different phrasings, and complex scenarios.
+Generate test variations automatically using AI. Define a simple example, and NotHotDog creates diverse test cases covering different phrasings and scenarios.
 
-### 🎭 Persona Management System
-Create and manage AI personas with configurable traits:
-- **Communication Style**: Formal, casual, technical, or friendly
-- **Technical Proficiency**: From novice to expert
-- **Emotional States**: Neutral, frustrated, excited, confused
-- **Response Patterns**: Message length, slang usage, error tolerance
+### 🎭 Built-in Test Personas
+Test with 3 pre-configured personas:
+- **Friendly User**: Polite, clear communication style
+- **Technical Expert**: Detailed technical questions  
+- **Confused User**: Needs clarification and simple explanations
 
-### 📊 Advanced Metrics & Analytics
+### 🔍 Hallucination Detection
+Advanced AI-powered detection to identify when agents provide incorrect or fabricated information - a critical feature for production AI systems.
 
-<div align="center">
+### 📊 Core Metrics
 
-| Metric Type | Description | Use Case |
-|-------------|-------------|----------|
-| **Response Time** | Measure agent latency | Performance optimization |
-| **Validation Score** | Rule-based accuracy checking | Quality assurance |
-| **Hallucination Detection** | AI-powered factual verification | Content accuracy |
-| **Conversation Flow** | Multi-turn interaction quality | UX improvement |
-| **Format Compliance** | Structure and schema validation | API consistency |
-
-</div>
+- **Response Time**: Measure agent latency and performance
+- **Validation Pass/Fail**: Ensure responses meet your requirements
+- **Hallucination Detection**: AI-powered factual verification
+- **Test Success Rate**: Track overall agent reliability
 
 ### 🔄 Test Execution Engine
 - **Parallel Processing**: Run 50+ test cases simultaneously

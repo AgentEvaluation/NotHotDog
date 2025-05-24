@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Persona } from '@/types';
 import { useErrorContext } from '@/hooks/useErrorContext';
 import ErrorDisplay from '@/components/common/ErrorDisplay';
+import { dbService } from '@/services/db';
 
 interface PersonaSelectorProps {
   selectedTest: string;
@@ -24,16 +25,15 @@ export default function PersonaSelector({ selectedTest, enhanced = false }: Pers
   const lastLoadedTestId = useRef<string | null>(null);
   const hasFetchedPersonas = useRef<boolean>(false);
 
-  // Fetch personas only once
+  // Fetch personas only once (now using hardcoded personas)
   useEffect(() => {
     if (hasFetchedPersonas.current) return;
     
     const fetchPersonas = async () => {
       setIsLocalLoading(true);
       await errorContext.withErrorHandling(async () => {
-        const res = await fetch('/api/tools/personas');
-        const data = await res.json();
-        setPersonas(data.data);
+        const personaList = await dbService.getPersonas();
+        setPersonas(personaList);
         hasFetchedPersonas.current = true;
       }, false); // Don't use global loading state
       setIsLocalLoading(false);

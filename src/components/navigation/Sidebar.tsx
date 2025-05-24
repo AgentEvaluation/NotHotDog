@@ -26,19 +26,9 @@ export default function Sidebar() {
       href: '/tools/test-cases'
     },
     {
-      label: 'Personas',
-      icon: Users,
-      href: '/tools/personas'
-    },
-    {
-      label: 'Runs',
+      label: 'Test Runs',
       icon: PlayCircle,
       href: '/tools/runs'
-    },
-    {
-      label: 'Metrics',
-      icon: ChartBarStacked,
-      href: '/tools/metrics'
     }
   ]
   

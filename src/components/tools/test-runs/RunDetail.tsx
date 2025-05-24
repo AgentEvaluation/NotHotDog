@@ -48,6 +48,9 @@ export default function RunDetail({
                 hour: '2-digit',
                 minute: '2-digit'
               })}
+              {run.chats.every(chat => chat.messages?.length === 0) && (
+                <span className="ml-2 text-yellow-600">(Legacy run - no messages stored)</span>
+              )}
             </p>
           </div>
           <div className="flex gap-4">
@@ -112,7 +115,7 @@ export default function RunDetail({
                         <span className="truncate">{chat.personaName ?? "Unknown Persona"}</span>
                       </div>
                       <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span>{chat.messages.length} messages</span>
+                        <span>{chat.messages?.length || 0} messages</span>
                         <span>•</span>
                         <span>
                           {chat.metrics?.responseTime?.length > 0

@@ -3,7 +3,6 @@ import { personaService } from './personaService';
 import { testService } from './testService';
 import { testRunService } from './testRunService';
 import { metricsService } from './metricsService';
-import { userService } from './userService';
 import { personaMappingService } from './personaMappingService';
 import { conversationService } from './conversationService';
 
@@ -11,10 +10,11 @@ import { conversationService } from './conversationService';
 export const dbService = {
   // Agent Config
   getAgentConfigs: agentConfigService.getAgentConfigs.bind(agentConfigService),
+  getAllAgentConfigs: agentConfigService.getAllAgentConfigs.bind(agentConfigService),
   getAgentConfigAll: agentConfigService.getAgentConfigAll.bind(agentConfigService),
   saveAgentConfig: agentConfigService.saveAgentConfig.bind(agentConfigService),
   deleteAgentConfig: agentConfigService.deleteAgentConfig.bind(agentConfigService),
-  getAgentConfig: agentConfigService.getAgentConfigAll.bind(agentConfigService),
+  getAgentConfig: agentConfigService.getAgentConfigs.bind(agentConfigService),
   updateValidationRules: agentConfigService.updateValidationRules.bind(agentConfigService),
   
   // Persona
@@ -39,7 +39,7 @@ export const dbService = {
   // Test Runs
   createTestRun: testRunService.createTestRun.bind(testRunService),
   getTestRuns: testRunService.getTestRuns.bind(testRunService),
-  saveMetricResults: testRunService.saveMetricResults.bind(testRunService),
+  getAllTestRuns: testRunService.getAllTestRuns.bind(testRunService),
   updateTestRun: testRunService.updateTestRun.bind(testRunService),
   updateTestConversationStatus: testRunService.updateTestConversationStatus.bind(testRunService),
  
@@ -52,11 +52,6 @@ export const dbService = {
   deleteMetric: metricsService.deleteMetric.bind(metricsService),
   getMetricsForAgent: metricsService.getMetricsForAgent.bind(metricsService),
   
-  // User/Org
-  signupUser: userService.signupUser.bind(userService),
-  getProfileByClerkId: userService.getProfileByClerkId.bind(userService),
-  getOrganization: userService.getOrganization.bind(userService),
-
   // Conversation management
 saveConversationMessage: conversationService.saveConversationMessage.bind(conversationService),
 getConversationMessages: conversationService.getConversationMessages.bind(conversationService),

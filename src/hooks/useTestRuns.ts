@@ -8,12 +8,19 @@ export function useTestRuns() {
   const errorContext = useErrorContext();
 
   useEffect(() => {
-    loadRuns();
+    const controller = new AbortController();
+    loadRuns(controller.signal);
+    
+    return () => {
+      controller.abort();
+    };
   }, []);
 
-  const loadRuns = async () => {
+  const loadRuns = async (signal?: AbortSignal) => {
     await errorContext.withErrorHandling(async () => {
-      const res = await fetch('/api/tools/test-runs');
+      const res = await fetch('/api/tools/test-runs', { signal });
+      if (signal?.aborted) return;
+      
       const response = await res.json();
       const savedRuns = response.data || response || [];
       setRuns(Array.isArray(savedRuns) ? savedRuns : []);

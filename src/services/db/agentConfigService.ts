@@ -2,14 +2,33 @@ import { prisma } from '@/lib/prisma';
 import { Rule } from '@/services/agents/claude/types';
 
 export class AgentConfigService {
-  async getAgentConfigs(userId: string): Promise<any[]> {
+  async getAllAgentConfigs(): Promise<any[]> {
     try { 
       const configs = await prisma.agent_configs.findMany({
-        where: {
-          organizations: {
-            profiles: { some: { clerk_id: userId } }
-          }
+        include: {
+          agent_headers: true,
+          agent_persona_mappings: true,
         },
+      });
+    
+      return configs.map(config => ({
+        id: config.id,
+        name: config.name,
+        endpoint: config.endpoint,
+        headers: config.agent_headers.reduce((acc, header) => ({
+          ...acc,
+          [header.key]: header.value,
+        }), {}),
+      }));
+    } catch(error) {
+      console.error("Database error in getAllAgentConfigs:", error);
+      throw new Error("Failed to fetch agent configs");
+    }
+  }
+
+  async getAgentConfigs(): Promise<any[]> {
+    try { 
+      const configs = await prisma.agent_configs.findMany({
         include: {
           agent_headers: true,
           agent_persona_mappings: true,
@@ -53,7 +72,6 @@ export class AgentConfigService {
         name: config.name,
         endpoint: config.endpoint,
         inputFormat: config.input_format,
-        org_id: config.org_id,
         headers: config.agent_headers.reduce((acc, h) => {
           acc[h.key] = h.value;
           return acc;
@@ -79,98 +97,128 @@ export class AgentConfigService {
     }
   }
 
-  async saveAgentConfig(config: any) {
-    try {
-      const parsedResponse = this.safeJsonParse(config.agent_response);
-      let input_format = this.safeJsonParse(config.input);
-  
-      if (config.id) {
-        // Update existing config
-        return await prisma.agent_configs.update({
-          where: { id: config.id },
-          data: {
-            name: config.name,
-            endpoint: config.endpoint,
-            input_format: input_format,
-            // Normally, org_id is not updated
-            agent_headers: {
-              deleteMany: {},
-              create: Object.entries(config.headers).map(([key, value]) => ({
-                key,
-                value: String(value),
-              }))
-            },
-            agent_descriptions: {
-              deleteMany: {},
-              create: { description: config.agentDescription }
-            },
-            agent_user_descriptions: {
-              deleteMany: {},
-              create: { description: config.userDescription }
-            },
-            validation_rules: {
-              deleteMany: {},
-              create: config.rules.map((rule: any) => ({
-                path: rule.path,
-                condition: rule.condition,
-                expected_value: rule.value,
-                description: rule.description || ""
-              }))
-            },
-            agent_outputs: {
-              deleteMany: {},
-              create: {
-                response_data: parsedResponse,
-                response_time: config.responseTime,
-                status: "success",
-                error_message: ""
+  async saveAgentConfig(config: {
+    id?: string;
+    name: string;
+    endpoint: string;
+    headers: Record<string, string>;
+    agentDescription: string;
+    userDescription: string;
+    rules: Array<{ path: string; condition: string; value: string; description?: string }>;
+    agent_response: string;
+    responseTime: number;
+    input: string;
+  }) {
+    const parsedResponse = this.safeJsonParse(config.agent_response);
+    let input_format = this.safeJsonParse(config.input);
+
+    return await prisma.$transaction(async (tx) => {
+      try {
+        if (config.id) {
+          // Delete related data first in a transaction
+          await tx.agent_headers.deleteMany({ where: { agent_id: config.id } });
+          await tx.agent_descriptions.deleteMany({ where: { agent_id: config.id } });
+          await tx.agent_user_descriptions.deleteMany({ where: { agent_id: config.id } });
+          await tx.validation_rules.deleteMany({ where: { agent_id: config.id } });
+          await tx.agent_outputs.deleteMany({ where: { agent_id: config.id } });
+
+          // Update existing config
+          const updatedConfig = await tx.agent_configs.update({
+            where: { id: config.id },
+            data: {
+              name: config.name,
+              endpoint: config.endpoint,
+              input_format: input_format,
+            }
+          });
+
+          // Create new related data
+          await tx.agent_headers.createMany({
+            data: Object.entries(config.headers).map(([key, value]) => ({
+              agent_id: config.id,
+              key,
+              value: String(value),
+            }))
+          });
+
+          await tx.agent_descriptions.create({
+            data: {
+              agent_id: config.id,
+              description: config.agentDescription
+            }
+          });
+
+          await tx.agent_user_descriptions.create({
+            data: {
+              agent_id: config.id,
+              description: config.userDescription
+            }
+          });
+
+          await tx.validation_rules.createMany({
+            data: config.rules.map((rule: any) => ({
+              agent_id: config.id,
+              path: rule.path,
+              condition: rule.condition,
+              expected_value: rule.value,
+              description: rule.description || ""
+            }))
+          });
+
+          await tx.agent_outputs.create({
+            data: {
+              agent_id: config.id,
+              response_data: parsedResponse,
+              response_time: config.responseTime,
+              status: "success",
+              error_message: ""
+            }
+          });
+
+          return updatedConfig;
+        } else {
+          // Create new config with all related data in transaction
+          return await tx.agent_configs.create({
+            data: {
+              name: config.name,
+              endpoint: config.endpoint,
+              input_format: input_format,
+              agent_headers: {
+                create: Object.entries(config.headers).map(([key, value]) => ({
+                  key,
+                  value: String(value),
+                }))
+              },
+              agent_descriptions: {
+                create: { description: config.agentDescription }
+              },
+              agent_user_descriptions: {
+                create: { description: config.userDescription }
+              },
+              validation_rules: {
+                create: config.rules.map((rule: any) => ({
+                  path: rule.path,
+                  condition: rule.condition,
+                  expected_value: rule.value,
+                  description: rule.description || ""
+                }))
+              },
+              agent_outputs: {
+                create: {
+                  response_data: parsedResponse,
+                  response_time: config.responseTime,
+                  status: "success",
+                  error_message: ""
+                }
               }
             }
-          }
-        });
-      } else {
-        return await prisma.agent_configs.create({
-          data: {
-            name: config.name,
-            endpoint: config.endpoint,
-            input_format: input_format,
-            org_id: config.org_id,
-            created_by: config.created_by,
-            agent_headers: {
-              create: Object.entries(config.headers).map(([key, value]) => ({
-                key,
-                value: String(value),
-              }))
-            },
-            agent_descriptions: {
-              create: { description: config.agentDescription }
-            },
-            agent_user_descriptions: {
-              create: { description: config.userDescription }
-            },
-            validation_rules: {
-              create: config.rules.map((rule: any) => ({
-                path: rule.path,
-                condition: rule.condition,
-                expected_value: rule.value,
-                description: rule.description || ""
-              }))
-            },
-            agent_outputs: {
-              create: {
-                response_data: parsedResponse,
-                response_time: config.responseTime,
-                status: "success",
-                error_message: ""
-              }
-            }
-          }
-        });
+          });
+        }
+      } catch (error) {
+        console.error("Error saving agent config:", error);
+        throw new Error("Failed to save agent config");
       }
-    } catch (error) {
-      console.error("Error saving agent config:", error);
-      throw new Error("Failed to save agent config");
-    }
+    });
   }
   
   safeJsonParse(str: string) {
